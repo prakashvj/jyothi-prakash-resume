@@ -27,7 +27,9 @@ param tags object = {}
 resource staticWebApp 'Microsoft.Web/staticSites@2024-04-01' = {
   name: name
   location: location
-  tags: tags
+  tags: union(tags, {
+    'azd-service-name': 'web'
+  })
   sku: {
     name: 'Free'  // Using free tier to minimize costs
     tier: 'Free'
