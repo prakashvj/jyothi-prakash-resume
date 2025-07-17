@@ -1,74 +1,79 @@
-// Main infrastructure template for Jyothi Prakash Resume Website
-// This template creates Azure Static Web Apps for hosting the resume website
-// with cost-optimized configuration using the free tier
+// Resume Website Template - Infrastructure Parameters
+// This configuration file contains all the parameters needed to deploy a resume website
+// Template can be reused for any portfolio/resume website by modifying the parameters
 
-@description('Name prefix for all resources')
-param projectName string = 'jyothi-resume'
+targetScope = 'resourceGroup'
 
-@description('Primary Azure region for deployment')
+// Core parameters 
+@description('The name of the website/project')
+param siteName string = 'jyothi-prakash-resume'
+
+@description('Azure region for deployment')
 param location string = resourceGroup().location
 
-@description('Environment name (cicd, prod)')
-param environmentName string = 'cicd'
+@description('Resource prefix for consistent naming')
+param resourcePrefix string = 'jpr'
 
-@description('GitHub repository URL for the static web app')
-param repositoryUrl string = ''
+@description('GitHub repository for source code')
+param repositoryUrl string = 'https://github.com/prakashvj/jyothi-prakash-resume'
 
-@description('GitHub branch to deploy from')
-param branch string = 'main'
+@description('GitHub repository branch')
+param repositoryBranch string = 'main'
 
-@description('GitHub repository token for CI/CD setup')
-@secure()
-param repositoryToken string = ''
+@description('Static Web App SKU')
+@allowed(['Free', 'Standard'])
+param staticWebAppSku string = 'Free'
 
-@description('Resource tags for cost tracking and management')
-param tags object = {
-  Project: projectName
-  Environment: environmentName
-  Owner: 'Jyothi Prakash Ventrapragada'
-  Purpose: 'Resume Website'
+@description('Tags for all resources')
+param resourceTags object = {
+  Owner: 'Jyothi Prakash'
+  Project: 'Resume Website'
+  Environment: 'Production'
   CostCenter: 'Personal'
-  CreatedBy: 'AZD'
+  Deployment: 'AZD'
 }
 
-// Generate unique resource names with proper suffixes
-var resourceNames = {
-  staticWebApp: '${projectName}-swa'
-  resourceGroup: '${projectName}-rg'
+@description('Path to the app code within the repository')
+param buildPath string = '/src'
+
+@description('Path to the build output')
+param outputPath string = ''
+
+@description('Path to the API code (if any)')
+param apiPath string = ''
+
+// Generate unique resource names using the template pattern
+var resourceToken = toLower(uniqueString(subscription().id, resourceGroup().id, location))
+var locationShort = 'eas'
+var staticWebAppName = '${resourcePrefix}-${siteName}-${locationShort}-${resourceToken}'
+
+// Output the configuration for verification
+output deploymentConfig object = {
+  siteName: siteName
+  staticWebAppName: staticWebAppName
+  location: location
+  repository: repositoryUrl
+  tier: staticWebAppSku
+  resourceToken: resourceToken
 }
 
 // Deploy the Static Web App
-module staticWebApp 'staticwebapp.bicep' = {
-  name: 'staticWebAppDeployment'
+module staticWebApp 'modules/staticwebapp.bicep' = {
+  name: 'deploy-${staticWebAppName}'
   params: {
-    name: resourceNames.staticWebApp
+    name: staticWebAppName
     location: location
     repositoryUrl: repositoryUrl
-    branch: branch
-    repositoryToken: repositoryToken
-    tags: tags
-    environmentName: environmentName
+    repositoryBranch: repositoryBranch
+    skuName: staticWebAppSku
+    resourceTags: resourceTags
+    buildPath: buildPath
+    outputPath: outputPath
+    apiPath: apiPath
   }
 }
 
-// Outputs for reference and automation
-@description('Static Web App resource ID')
-output staticWebAppId string = staticWebApp.outputs.staticWebAppId
-
-@description('Static Web App default hostname')
-output defaultHostname string = staticWebApp.outputs.defaultHostname
-
-@description('Command to get deployment token for GitHub Actions')
-output deploymentTokenCommand string = staticWebApp.outputs.deploymentTokenNote
-
-@description('Resource group name')
+// Output important information
+output staticWebAppUrl string = staticWebApp.outputs.defaultHostname
+output staticWebAppName string = staticWebAppName
 output resourceGroupName string = resourceGroup().name
-
-@description('Environment name')
-output environment string = environmentName
-
-@description('All resource names created')
-output resourceNames object = resourceNames
-
-@description('Website URL')
-output websiteUrl string = 'https://${staticWebApp.outputs.defaultHostname}'
