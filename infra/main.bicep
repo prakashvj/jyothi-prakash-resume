@@ -3,13 +3,13 @@
 // with cost-optimized configuration using the free tier
 
 @description('Name prefix for all resources')
-param projectName string = 'jyothi-prakash-resume'
+param projectName string = 'jyothi-resume'
 
 @description('Primary Azure region for deployment')
 param location string = resourceGroup().location
 
-@description('Environment name (ppe, prod)')
-param environmentName string = 'prod'
+@description('Environment name (cicd, prod)')
+param environmentName string = 'cicd'
 
 @description('GitHub repository URL for the static web app')
 param repositoryUrl string = ''
@@ -31,10 +31,10 @@ param tags object = {
   CreatedBy: 'AZD'
 }
 
-// Generate unique resource names with environment suffix
+// Generate unique resource names with proper suffixes
 var resourceNames = {
-  staticWebApp: '${projectName}-${environmentName}'
-  resourceGroup: resourceGroup().name
+  staticWebApp: '${projectName}-swa'
+  resourceGroup: '${projectName}-rg'
 }
 
 // Deploy the Static Web App

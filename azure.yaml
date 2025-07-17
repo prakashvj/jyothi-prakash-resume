@@ -1,5 +1,5 @@
 # Azure Developer CLI configuration for Jyothi Prakash Resume Website
-name: jyothi-prakash-resume
+name: jyothi-resume
 metadata:
   template: staticwebapp@1.0.0
   description: Professional resume website for Jyothi Prakash Ventrapragada - Senior SRE Manager

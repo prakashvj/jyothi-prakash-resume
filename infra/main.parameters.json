@@ -3,13 +3,13 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "projectName": {
-      "value": "jyothi-prakash-resume"
+      "value": "jyothi-resume"
     },
     "location": {
-      "value": "eastus2"
+      "value": "centralindia"
     },
     "environmentName": {
-      "value": "prod"
+      "value": "cicd"
     },
     "repositoryUrl": {
       "value": "https://github.com/prakashvj/jyothi-prakash-resume"
@@ -22,8 +22,8 @@
     },
     "tags": {
       "value": {
-        "Project": "jyothi-prakash-resume",
-        "Environment": "prod",
+        "Project": "jyothi-resume",
+        "Environment": "cicd",
         "Owner": "Jyothi Prakash Ventrapragada",
         "Purpose": "Resume Website",
         "CostCenter": "Personal",
