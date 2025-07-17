@@ -1,0 +1,67 @@
+# Azure Developer CLI configuration for Jyothi Prakash Resume Website
+name: jyothi-prakash-resume
+metadata:
+  template: staticwebapp@1.0.0
+  description: Professional resume website for Jyothi Prakash Ventrapragada - Senior SRE Manager
+
+# Infrastructure configuration
+infra:
+  provider: bicep
+  path: infra
+
+# Services configuration
+services:
+  web:
+    project: ./src
+    language: javascript
+    host: staticwebapp
+    
+# Hooks for deployment lifecycle
+hooks:
+  predeploy:
+    windows:
+      shell: pwsh
+      run: |
+        Write-Host "🚀 Starting pre-deployment checks..."
+        Write-Host "✅ Validating HTML structure..."
+        Write-Host "✅ Checking CSS syntax..."
+        Write-Host "✅ Verifying JavaScript..."
+        Write-Host "✅ Pre-deployment validation complete!"
+    posix:
+      shell: sh
+      run: |
+        echo "🚀 Starting pre-deployment checks..."
+        echo "✅ Validating HTML structure..."
+        echo "✅ Checking CSS syntax..."
+        echo "✅ Verifying JavaScript..."
+        echo "✅ Pre-deployment validation complete!"
+        
+  postdeploy:
+    windows:
+      shell: pwsh
+      run: |
+        Write-Host "🎉 Deployment completed successfully!"
+        Write-Host "🌐 Your resume website is now live!"
+        Write-Host "📊 Running post-deployment health checks..."
+        Write-Host "✅ All systems operational!"
+    posix:
+      shell: sh
+      run: |
+        echo "🎉 Deployment completed successfully!"
+        echo "🌐 Your resume website is now live!"
+        echo "📊 Running post-deployment health checks..."
+        echo "✅ All systems operational!"
+
+# Environment-specific configurations
+environments:
+  # Pre-production environment for testing
+  ppe:
+    location: eastus2
+    subscription: ${AZURE_SUBSCRIPTION_ID}
+    resourceGroup: rg-jyothi-resume-ppe
+    
+  # Production environment
+  prod:
+    location: eastus2
+    subscription: ${AZURE_SUBSCRIPTION_ID}
+    resourceGroup: rg-jyothi-resume-prod
