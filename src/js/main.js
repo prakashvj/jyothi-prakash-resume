@@ -314,6 +314,24 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// Add last updated timestamp
+function updateLastModified() {
+    const lastUpdatedElement = document.getElementById('lastUpdated');
+    if (lastUpdatedElement) {
+        const now = new Date();
+        lastUpdatedElement.textContent = now.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+}
+
+// Initialize last updated timestamp
+updateLastModified();
+
 // Export functions for testing (if needed)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -322,6 +340,7 @@ if (typeof module !== 'undefined' && module.exports) {
         initializeContactInteractions,
         initializeSkillAnimations,
         showToast,
-        debounce
+        debounce,
+        updateLastModified
     };
 }
