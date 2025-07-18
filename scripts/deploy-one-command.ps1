@@ -188,20 +188,42 @@ if ($LASTEXITCODE -eq 0) {
     
     Write-Host ""
     Write-Host "🎉 DEPLOYMENT SUCCESSFUL!" -ForegroundColor Green
+    
+    # Configure custom domain if enabled in environment config
+    Write-Host "🌐 Configuring custom domain..." -ForegroundColor Cyan
+    try {
+        & "$PSScriptRoot\configure-custom-domain.ps1" -Environment $Environment
+        
+        # Check if custom domain was configured
+        $rawConfig = Get-RawDeploymentConfig
+        $envConfig = $rawConfig.environments.$Environment
+        if ($envConfig.azure.customDomain.enabled) {
+            $customDomain = $envConfig.azure.customDomain.fullDomain
+            Write-Host "✅ Custom domain configured: https://$customDomain" -ForegroundColor Green
+            $finalUrl = "https://$customDomain"
+        } else {
+            $finalUrl = "https://$websiteUrl"
+        }
+    } catch {
+        Write-Host "⚠️  Custom domain configuration skipped: $($_.Exception.Message)" -ForegroundColor Yellow
+        $finalUrl = "https://$websiteUrl"
+    }
+    
+    Write-Host ""
     Write-Host "📋 Resume Website Details:" -ForegroundColor Cyan
     Write-Host "   • Name: $($azureResources.StaticWebApp)" -ForegroundColor White
     Write-Host "   • Resource Group: $($azureResources.ResourceGroup)" -ForegroundColor White
     Write-Host "   • Environment: $Environment" -ForegroundColor White
     Write-Host "   • Location: $($azureResources.Location)" -ForegroundColor White
     Write-Host ""
-    Write-Host "🌐 Live URL: https://$websiteUrl" -ForegroundColor Green
+    Write-Host "🌐 Live URL: $finalUrl" -ForegroundColor Green
     Write-Host ""
     Write-Host "✨ Your modern resume with Carter-style design is now live!" -ForegroundColor Magenta
     
     # Open the website (optional)
     $openSite = Read-Host "Would you like to open the website now? (y/N)"
     if ($openSite -eq 'y' -or $openSite -eq 'Y') {
-        Start-Process "https://$websiteUrl"
+        Start-Process $finalUrl
     }
 } else {
     Write-Host "❌ Deployment failed!" -ForegroundColor Red
