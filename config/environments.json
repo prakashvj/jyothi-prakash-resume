@@ -72,7 +72,14 @@
         "location": "eastasia",
         "environmentName": "prod",
         "resourceGroup": "jyothi-resume-RG",
-        "staticWebAppName": "jyothi-resume-WebApp"
+        "staticWebAppName": "jyothi-resume-WebApp",
+        "customDomain": {
+          "enabled": true,
+          "friendlyName": "jyothiventrapragada",
+          "domainType": "azurestaticapps",
+          "fullDomain": "jyothiventrapragada.azurestaticapps.net",
+          "autoConfigureDNS": true
+        }
       },
       "deployment": {
         "skipBuild": true,

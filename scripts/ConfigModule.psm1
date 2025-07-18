@@ -188,5 +188,28 @@ function Test-ConfigurationValidation {
     return $true
 }
 
+function Get-RawDeploymentConfig {
+    param(
+        [Parameter(Mandatory=$false)]
+        [string]$ConfigPath = "./config"
+    )
+    
+    $envJsonFile = Join-Path $ConfigPath "environments.json"
+    if (Test-Path $envJsonFile) {
+        try {
+            $rawConfig = Get-Content $envJsonFile | ConvertFrom-Json
+            return $rawConfig
+        }
+        catch {
+            Write-Error "Failed to load environments.json: $($_.Exception.Message)"
+            return $null
+        }
+    }
+    else {
+        Write-Error "environments.json not found at: $envJsonFile"
+        return $null
+    }
+}
+
 # Export functions for use in other scripts
-Export-ModuleMember -Function Get-DeploymentConfig, Set-DeploymentEnvironment, Get-AzureResourceNames, Test-ConfigurationValidation
+Export-ModuleMember -Function Get-DeploymentConfig, Set-DeploymentEnvironment, Get-AzureResourceNames, Test-ConfigurationValidation, Get-RawDeploymentConfig, Get-RawDeploymentConfig
