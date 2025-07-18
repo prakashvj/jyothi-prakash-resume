@@ -16,6 +16,7 @@ Welcome to the comprehensive documentation for the Jyothi Prakash Resume Website
 |-------|---------|-----------------|
 | [📜 Scripts Reference](SCRIPTS-REFERENCE.md) | Complete script documentation | Power users, automation |
 | [🚀 Deployment Reference](DEPLOYMENT-REFERENCE.md) | Advanced deployment strategies | DevOps, production deployments |
+| [🔄 PR Workflow Guide](PR-WORKFLOW-GUIDE.md) | Professional Pull Request workflow | Teams, code quality management |
 
 ---
 

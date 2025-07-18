@@ -1,6 +1,15 @@
 # 🏠 Jyothi Prakash Resume Website
 
-Professional resume website for **Jyothi Prakash Ventrapragada**, Senior Site Reliability Engineering Manager, showcasing 25+ years of technology experience with Azure cloud environments, database architecture, and large-scale distributed systems.
+Professional re## 📚 Documentation
+
+| Document | Description | Use Case |
+|----------|-------------|----------|
+| [🚀 Quick Start](docs/QUICK-START.md) | Get started in 5 minutes | First-time setup |
+| [⚙️ Configuration System](docs/CONFIGURATION-SYSTEM.md) | Environment and configuration management | Understanding the config system |
+| [📜 Scripts Reference](docs/SCRIPTS-REFERENCE.md) | Complete script documentation | Script usage and parameters |
+| [🚀 Deployment Reference](docs/DEPLOYMENT-REFERENCE.md) | Deployment strategies and best practices | Advanced deployment scenarios |
+| [🔄 PR Workflow Guide](docs/PR-WORKFLOW-GUIDE.md) | Professional Pull Request workflow | Team collaboration & code quality |
+| [🔧 Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and solutions | Problem resolution |ite for **Jyothi Prakash Ventrapragada**, Senior Site Reliability Engineering Manager, showcasing 25+ years of technology experience with Azure cloud environments, database architecture, and large-scale distributed systems.
 
 ## 🌐 Live Website
 
@@ -96,9 +105,22 @@ notepad config\.env
 
 ### Regular Updates
 ```powershell
-# Quick content deployment
-.\scripts\quick-deploy.ps1 -Environment "prod"
+# Create feature branch for changes
+git checkout -b feature/update-resume-content
+
+# Make your changes to src/index.html or src/css/style.css
+
+# Commit and push
+git add .
+git commit -m "Update: Add new project experience"
+git push origin feature/update-resume-content
+
+# Create Pull Request on GitHub
+# After review and approval, merge triggers automatic deployment
 ```
+
+### Professional PR Workflow
+👉 **[Complete PR Workflow Guide](docs/PR-WORKFLOW-GUIDE.md)** for team collaboration
 
 ### Troubleshooting
 ```powershell
