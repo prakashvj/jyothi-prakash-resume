@@ -1,0 +1,287 @@
+# Complete Infrastructure-as-Code CI/CD Pipeline for Azure Static Web Apps
+name: Full Infrastructure Deploy
+
+on:
+  workflow_dispatch: # Manual trigger for new site setup
+  push:
+    branches: ["main"]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: ["main"]
+
+env:
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+jobs:
+  # Complete infrastructure and deployment job
+  full_infrastructure_deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Complete Infrastructure and Deploy Job
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Azure Developer CLI
+        uses: Azure/setup-azd@v0.1.0
+
+      - name: Azure CLI Setup
+        run: |
+          az --version
+          az account show
+
+      - name: Read and Validate Configuration
+        id: config_validation
+        run: |
+          echo "📋 Reading configuration from environments.json..."
+          
+          # Validate configuration file exists
+          if [ ! -f "config/environments.json" ]; then
+            echo "❌ Configuration file not found: config/environments.json"
+            exit 1
+          fi
+          
+          # Extract configuration values
+          RESOURCE_GROUP=$(jq -r '.environments.prod.azure.resourceGroup // "jyothi-resume-RG"' config/environments.json)
+          STATIC_WEB_APP=$(jq -r '.environments.prod.azure.staticWebAppName // "jyothi-resume-WebApp"' config/environments.json)
+          LOCATION=$(jq -r '.environments.prod.azure.location // "eastasia"' config/environments.json)
+          CUSTOM_DOMAIN_ENABLED=$(jq -r '.environments.prod.azure.customDomain.enabled // false' config/environments.json)
+          FRIENDLY_NAME=$(jq -r '.environments.prod.azure.customDomain.friendlyName // "jyothiventrapragada"' config/environments.json)
+          
+          # Validate required configuration
+          if [ "$RESOURCE_GROUP" = "null" ] || [ "$STATIC_WEB_APP" = "null" ]; then
+            echo "❌ Missing required configuration in environments.json"
+            exit 1
+          fi
+          
+          echo "✅ Configuration validated:"
+          echo "   Resource Group: $RESOURCE_GROUP"
+          echo "   Static Web App: $STATIC_WEB_APP"
+          echo "   Location: $LOCATION"
+          echo "   Custom Domain: $CUSTOM_DOMAIN_ENABLED"
+          
+          # Set outputs for later steps
+          echo "resource_group=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
+          echo "static_web_app=$STATIC_WEB_APP" >> $GITHUB_OUTPUT
+          echo "location=$LOCATION" >> $GITHUB_OUTPUT
+          echo "custom_domain_enabled=$CUSTOM_DOMAIN_ENABLED" >> $GITHUB_OUTPUT
+          echo "friendly_name=$FRIENDLY_NAME" >> $GITHUB_OUTPUT
+
+      - name: Check Existing Azure Resources
+        id: check_resources
+        run: |
+          echo "🔍 Validating existing Azure resources..."
+          
+          RESOURCE_GROUP="${{ steps.config_validation.outputs.resource_group }}"
+          STATIC_WEB_APP="${{ steps.config_validation.outputs.static_web_app }}"
+          LOCATION="${{ steps.config_validation.outputs.location }}"
+          
+          # Check if resource group exists
+          RG_EXISTS=$(az group exists --name $RESOURCE_GROUP)
+          echo "Resource Group ($RESOURCE_GROUP) exists: $RG_EXISTS"
+          
+          # Initialize change flags
+          RESOURCE_CHANGED="false"
+          DEPLOYMENT_NEEDED="false"
+          
+          if [ "$RG_EXISTS" = "true" ]; then
+            # Check if Static Web App exists
+            SWA_EXISTS=$(az staticwebapp list --resource-group $RESOURCE_GROUP --query "[?name=='$STATIC_WEB_APP'].name" --output tsv)
+            
+            if [ -n "$SWA_EXISTS" ]; then
+              echo "✅ Static Web App found: $STATIC_WEB_APP"
+              
+              # Check for configuration drift (location, SKU, etc.)
+              CURRENT_LOCATION=$(az staticwebapp show --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --query "location" --output tsv)
+              
+              if [ "$CURRENT_LOCATION" != "$LOCATION" ]; then
+                echo "⚠️ Configuration drift detected - Location changed: $CURRENT_LOCATION -> $LOCATION"
+                RESOURCE_CHANGED="true"
+              else
+                echo "✅ Resource configuration matches desired state"
+              fi
+              
+              echo "skip_provisioning=true" >> $GITHUB_OUTPUT
+              echo "resource_exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Static Web App not found, provisioning required"
+              DEPLOYMENT_NEEDED="true"
+              echo "skip_provisioning=false" >> $GITHUB_OUTPUT
+              echo "resource_exists=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "❌ Resource Group not found, full provisioning required"
+            DEPLOYMENT_NEEDED="true"
+            echo "skip_provisioning=false" >> $GITHUB_OUTPUT
+            echo "resource_exists=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Set deployment strategy outputs
+          echo "resource_changed=$RESOURCE_CHANGED" >> $GITHUB_OUTPUT
+          echo "deployment_needed=$DEPLOYMENT_NEEDED" >> $GITHUB_OUTPUT
+          echo "resource_group=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
+          echo "static_web_app=$STATIC_WEB_APP" >> $GITHUB_OUTPUT
+
+      - name: Deploy Azure Resources (If Changed/Missing)
+        if: steps.check_resources.outputs.skip_provisioning != 'true' || steps.check_resources.outputs.resource_changed == 'true'
+        run: |
+          if [ "${{ steps.check_resources.outputs.resource_changed }}" = "true" ]; then
+            echo "🔄 Deploying resource changes due to configuration drift..."
+          else
+            echo "🏗️ Provisioning new Azure infrastructure..."
+          fi
+          azd provision --no-prompt
+        env:
+          AZURE_ENV_NAME: ${{ secrets.AZURE_ENV_NAME || 'prod' }}
+          AZURE_LOCATION: ${{ steps.config_validation.outputs.location }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Skip Resource Deployment
+        if: steps.check_resources.outputs.skip_provisioning == 'true' && steps.check_resources.outputs.resource_changed != 'true'
+        run: |
+          echo "⏭️ Skipping resource deployment - no changes detected"
+          echo "✅ Resource Group: ${{ steps.check_resources.outputs.resource_group }}"
+          echo "✅ Static Web App: ${{ steps.check_resources.outputs.static_web_app }}"
+          echo "📋 Configuration matches desired state"
+
+      - name: Detect Content Changes
+        id: content_changes
+        run: |
+          echo "🔍 Detecting content changes..."
+          
+          # Check if this is a content-only change
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          CONTENT_CHANGED="false"
+          INFRASTRUCTURE_CHANGED="false"
+          
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "📂 Changed files:"
+            echo "$CHANGED_FILES"
+            
+            # Check for content changes
+            if echo "$CHANGED_FILES" | grep -E '^src/|^config/environments\.json$'; then
+              CONTENT_CHANGED="true"
+              echo "✅ Content changes detected"
+            fi
+            
+            # Check for infrastructure changes
+            if echo "$CHANGED_FILES" | grep -E '^infra/|^azure\.yaml$|^\.github/workflows/'; then
+              INFRASTRUCTURE_CHANGED="true"
+              echo "✅ Infrastructure changes detected"
+            fi
+          else
+            echo "ℹ️ No file changes detected (manual trigger or first commit)"
+            CONTENT_CHANGED="true" # Default to content deployment
+          fi
+          
+          echo "content_changed=$CONTENT_CHANGED" >> $GITHUB_OUTPUT
+          echo "infrastructure_changed=$INFRASTRUCTURE_CHANGED" >> $GITHUB_OUTPUT
+
+      - name: Deploy Content via AZD (New Infrastructure)
+        if: steps.check_resources.outputs.skip_provisioning != 'true' || steps.check_resources.outputs.resource_changed == 'true'
+        run: |
+          echo "📦 Deploying content via AZD (with infrastructure)..."
+          azd deploy --no-prompt
+
+      - name: Deploy Content Only (Existing Infrastructure)
+        if: steps.check_resources.outputs.skip_provisioning == 'true' && steps.check_resources.outputs.resource_changed != 'true' && steps.content_changes.outputs.content_changed == 'true'
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/src"
+          api_location: ""
+          output_location: ""
+
+      - name: Skip Content Deployment
+        if: steps.content_changes.outputs.content_changed != 'true' && steps.check_resources.outputs.skip_provisioning == 'true'
+        run: |
+          echo "⏭️ Skipping content deployment - no content changes detected"
+          echo "📋 Only infrastructure or workflow changes found"
+
+      - name: Configure Custom Domain
+        if: steps.config_validation.outputs.custom_domain_enabled == 'true'
+        run: |
+          echo "🌐 Configuring custom domain..."
+          
+          RESOURCE_GROUP="${{ steps.check_resources.outputs.resource_group }}"
+          STATIC_WEB_APP="${{ steps.check_resources.outputs.static_web_app }}"
+          FRIENDLY_NAME="${{ steps.config_validation.outputs.friendly_name }}"
+          CUSTOM_DOMAIN="${FRIENDLY_NAME}.azurestaticapps.net"
+          
+          echo "Resource Group: $RESOURCE_GROUP"
+          echo "Static Web App: $STATIC_WEB_APP"
+          echo "Custom Domain: $CUSTOM_DOMAIN"
+          
+          # Verify Static Web App exists
+          SWA_EXISTS=$(az staticwebapp list --resource-group $RESOURCE_GROUP --query "[?name=='$STATIC_WEB_APP'].name" --output tsv)
+          
+          if [ -z "$SWA_EXISTS" ]; then
+            echo "❌ Static Web App not found: $STATIC_WEB_APP"
+            exit 1
+          fi
+          
+          # Check if custom domain already exists
+          EXISTING_DOMAIN=$(az staticwebapp hostname list --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --query "[?name=='$CUSTOM_DOMAIN'].name" --output tsv 2>/dev/null || echo "")
+          
+          if [ -z "$EXISTING_DOMAIN" ]; then
+            echo "🔧 Configuring custom domain: $CUSTOM_DOMAIN"
+            az staticwebapp hostname set --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --hostname $CUSTOM_DOMAIN
+            if [ $? -eq 0 ]; then
+              echo "✅ Custom domain configured successfully"
+            else
+              echo "⚠️ Custom domain configuration failed, but deployment continues"
+            fi
+          else
+            echo "✅ Custom domain already exists: $CUSTOM_DOMAIN"
+          fi
+
+      - name: Skip Custom Domain Configuration
+        if: steps.config_validation.outputs.custom_domain_enabled != 'true'
+        run: |
+          echo "⏭️ Skipping custom domain configuration - disabled in config"
+
+      - name: Output Deployment Information
+        run: |
+          echo "🎉 Deployment completed!"
+          echo ""
+          if [ "${{ steps.check_resources.outputs.skip_provisioning }}" = "true" ]; then
+            echo "📊 Content-Only Deployment Summary:"
+            echo "├── ⏭️ Infrastructure: Skipped (already exists)"
+            echo "├── 📦 Content: Updated"
+            echo "├── Resource Group: ${{ steps.check_resources.outputs.resource_group }}"
+            echo "├── Static Web App: ${{ steps.check_resources.outputs.static_web_app }}"
+          else
+            echo "📊 Full Infrastructure Deployment Summary:"
+            echo "├── 🏗️ Infrastructure: Provisioned"
+            echo "├── 📦 Content: Deployed"
+            echo "├── Resource Group: ${{ secrets.AZURE_RESOURCE_GROUP_NAME || 'jyothi-resume-RG' }}"
+            echo "├── Static Web App: ${{ secrets.AZURE_STATIC_WEB_APP_NAME || 'jyothi-resume-WebApp' }}"
+          fi
+          echo "├── Custom Domain: https://jyothiventrapragada.azurestaticapps.net"
+          echo "└── Status: Live and Ready"
+          echo ""
+          echo "🌐 Access your resume at:"
+          echo "   https://jyothiventrapragada.azurestaticapps.net"
+
+  # Close pull request job
+  close_pull_request_job:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Close Pull Request Job
+    steps:
+      - name: Close Pull Request
+        id: closepullrequest
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: "close"
