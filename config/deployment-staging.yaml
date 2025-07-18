@@ -1,0 +1,168 @@
+# Enhanced Azure Static Web Apps deployment with staging capabilities
+# This configuration supports production-level deployment with validation
+
+# Azure Static Web Apps staging environment configuration
+azure:
+  staticWebApps:
+    production:
+      environmentName: "production"
+      customDomain: null
+      stagingSlots:
+        enabled: true
+        preProductionValidation: true
+        automaticSwap: false
+        healthCheckUrl: "/"
+        healthCheckTimeout: 300
+    
+    staging:
+      environmentName: "staging"
+      customDomain: null
+      healthChecks:
+        enabled: true
+        endpoints:
+          - path: "/"
+            expectedStatus: 200
+            timeout: 30
+          - path: "/css/style.css"
+            expectedStatus: 200
+            timeout: 15
+          - path: "/js/main.js"
+            expectedStatus: 200
+            timeout: 15
+        
+deployment:
+  strategy: "blue-green"
+  validation:
+    preDeployment:
+      - "validate-configuration"
+      - "check-dependencies"
+      - "verify-source-code"
+      - "validate-infrastructure"
+    
+    postDeployment:
+      - "health-check"
+      - "smoke-test"
+      - "performance-test"
+      - "content-validation"
+    
+    rollback:
+      triggers:
+        - "health-check-failure"
+        - "smoke-test-failure"
+        - "performance-degradation"
+      automatic: true
+      timeoutMinutes: 10
+
+monitoring:
+  healthChecks:
+    interval: 30
+    retryCount: 3
+    endpoints:
+      - url: "/"
+        method: "GET"
+        expectedStatusCode: 200
+        timeout: 30
+        contentCheck: "Jyothi Prakash"
+      
+      - url: "/css/style.css"
+        method: "GET"
+        expectedStatusCode: 200
+        timeout: 15
+        contentType: "text/css"
+      
+      - url: "/js/main.js"
+        method: "GET"
+        expectedStatusCode: 200
+        timeout: 15
+        contentType: "application/javascript"
+  
+  performance:
+    thresholds:
+      loadTime: 5000  # milliseconds
+      firstContentfulPaint: 2000
+      timeToInteractive: 3000
+    
+  alerts:
+    channels:
+      - type: "azure-monitor"
+        enabled: true
+      - type: "email"
+        enabled: false
+        recipients: []
+      - type: "teams"
+        enabled: false
+        webhook: ""
+
+security:
+  headers:
+    contentSecurityPolicy: "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'"
+    xFrameOptions: "DENY"
+    xContentTypeOptions: "nosniff"
+    referrerPolicy: "strict-origin-when-cross-origin"
+  
+  scanning:
+    vulnerabilityCheck: true
+    dependencyCheck: true
+    codeQuality: true
+
+rollback:
+  strategy: "immediate"
+  preservePreviousVersion: true
+  maxRetentionDays: 30
+  triggers:
+    healthCheckFailures: 3
+    errorRate: 0.05  # 5% error rate
+    responseTime: 10000  # 10 seconds
+
+notifications:
+  deployment:
+    success: true
+    failure: true
+    rollback: true
+  
+  channels:
+    console: true
+    logFile: true
+    azureMonitor: false
+    teams: false
+    email: false
+
+# Environment-specific overrides
+environments:
+  dev:
+    monitoring:
+      healthChecks:
+        interval: 60
+      performance:
+        thresholds:
+          loadTime: 10000
+    
+    rollback:
+      automatic: false
+  
+  staging:
+    monitoring:
+      healthChecks:
+        interval: 45
+      performance:
+        thresholds:
+          loadTime: 7000
+    
+    rollback:
+      automatic: true
+      triggers:
+        healthCheckFailures: 5
+  
+  prod:
+    monitoring:
+      healthChecks:
+        interval: 30
+      performance:
+        thresholds:
+          loadTime: 3000
+    
+    rollback:
+      automatic: true
+      triggers:
+        healthCheckFailures: 2
+        errorRate: 0.02  # 2% error rate

@@ -1,0 +1,120 @@
+{
+  "$schema": "./environments.schema.json",
+  "version": "1.0",
+  "description": "Environment configuration for Jyothi's Resume Website deployment",
+  "environments": {
+    "dev": {
+      "azure": {
+        "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
+        "tenantId": "${AZURE_TENANT_ID}",
+        "location": "eastasia",
+        "environmentName": "dev",
+        "resourceGroup": "jyothi-resume-dev-RG",
+        "staticWebAppName": "jyothi-resume-dev-WebApp"
+      },
+      "deployment": {
+        "skipBuild": true,
+        "outputPath": "src",
+        "environment": "development"
+      },
+      "features": {
+        "enableApplicationInsights": false,
+        "enableSSL": true,
+        "enableStagingSlots": true,
+        "enableCustomDomains": false
+      },
+      "monitoring": {
+        "healthChecksEnabled": true,
+        "loggingLevel": "DEBUG"
+      },
+      "tags": {
+        "Environment": "Development",
+        "Project": "jyothi-resume",
+        "Owner": "jyothiv",
+        "CostCenter": "personal"
+      }
+    },
+    "staging": {
+      "azure": {
+        "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
+        "tenantId": "${AZURE_TENANT_ID}",
+        "location": "eastasia",
+        "environmentName": "staging",
+        "resourceGroup": "jyothi-resume-staging-RG",
+        "staticWebAppName": "jyothi-resume-staging-WebApp"
+      },
+      "deployment": {
+        "skipBuild": true,
+        "outputPath": "src",
+        "environment": "staging"
+      },
+      "features": {
+        "enableApplicationInsights": true,
+        "enableSSL": true,
+        "enableStagingSlots": true,
+        "enableCustomDomains": false
+      },
+      "monitoring": {
+        "healthChecksEnabled": true,
+        "loggingLevel": "INFO"
+      },
+      "tags": {
+        "Environment": "Staging",
+        "Project": "jyothi-resume",
+        "Owner": "jyothiv",
+        "CostCenter": "personal"
+      }
+    },
+    "prod": {
+      "azure": {
+        "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
+        "tenantId": "${AZURE_TENANT_ID}",
+        "location": "eastasia",
+        "environmentName": "prod",
+        "resourceGroup": "jyothi-resume-RG",
+        "staticWebAppName": "jyothi-resume-WebApp"
+      },
+      "deployment": {
+        "skipBuild": true,
+        "outputPath": "src",
+        "environment": "production"
+      },
+      "features": {
+        "enableApplicationInsights": true,
+        "enableSSL": true,
+        "enableStagingSlots": false,
+        "enableCustomDomains": true
+      },
+      "monitoring": {
+        "healthChecksEnabled": true,
+        "loggingLevel": "INFO"
+      },
+      "tags": {
+        "Environment": "Production",
+        "Project": "jyothi-resume",
+        "Owner": "jyothiv",
+        "CostCenter": "personal"
+      }
+    }
+  },
+  "shared": {
+    "github": {
+      "branch": "${GITHUB_BRANCH:-main}",
+      "repositoryUrl": "${GITHUB_REPOSITORY_URL}"
+    },
+    "security": {
+      "cspLevel": "${CSP_LEVEL:-moderate}",
+      "enableHSTS": true,
+      "publicNetworkAccess": "Enabled"
+    },
+    "build": {
+      "staticFiles": [
+        "index.html",
+        "css/**/*",
+        "js/**/*",
+        "images/**/*",
+        "fonts/**/*"
+      ]
+    }
+  }
+}

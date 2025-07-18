@@ -1,9 +1,29 @@
-# Azure Developer CLI configuration for Resume Website Template
-name: jyothi-prakash-resume
+# Azure Developer CLI Configuration
+# This file configures the Azure Developer CLI (azd) for deploying the resume website
+
+name: jyothi-resume-website
 metadata:
-  template: resume-website-template@1.0.0
-  
+  template: jyothi-resume-website@0.0.1-beta
+
+# Services to deploy
 services:
   web:
     project: ./src
+    language: js
     host: staticwebapp
+    resourceName: jyothi-resume-WebApp  # Force specific resource name
+
+# Infrastructure hooks
+hooks:
+  postdeploy:
+    shell: pwsh
+    run: echo "Resume website deployed successfully!"
+
+# Azure environment configuration
+infra:
+  provider: bicep
+  path: infra
+
+# Configuration files
+config:
+  path: config

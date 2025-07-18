@@ -1,79 +1,47 @@
-// Resume Website Template - Infrastructure Parameters
-// This configuration file contains all the parameters needed to deploy a resume website
-// Template can be reused for any portfolio/resume website by modifying the parameters
-
+// Main Bicep template for Jyothi Prakash Resume Website
+// Deploys Azure Static Web App with zero-cost (Free) tier
 targetScope = 'resourceGroup'
 
-// Core parameters 
-@description('The name of the website/project')
-param siteName string = 'jyothi-prakash-resume'
+@minLength(1)
+@maxLength(64)
+@description('Name prefix for all resources (alphanumeric only)')
+param environmentName string
 
-@description('Azure region for deployment')
-param location string = resourceGroup().location
+@minLength(1)
+@description('Primary location for all resources')
+param location string
 
-@description('Resource prefix for consistent naming')
-param resourcePrefix string = 'jpr'
+@description('Static Web App name - fixed to avoid duplicates')
+param staticWebAppName string = 'jyothi-resume-WebApp'
 
-@description('GitHub repository for source code')
-param repositoryUrl string = 'https://github.com/prakashvj/jyothi-prakash-resume'
-
-@description('GitHub repository branch')
-param repositoryBranch string = 'main'
-
-@description('Static Web App SKU')
-@allowed(['Free', 'Standard'])
-param staticWebAppSku string = 'Free'
-
-@description('Tags for all resources')
-param resourceTags object = {
-  Owner: 'Jyothi Prakash'
-  Project: 'Resume Website'
-  Environment: 'Production'
-  CostCenter: 'Personal'
-  Deployment: 'AZD'
+@description('Tags to apply to all resources')
+param tags object = {
+  'azd-env-name': environmentName
+  project: 'jyothi-resume-website'
+  environment: 'production'
+  'cost-center': 'personal'
+  owner: 'jyothi-prakash'
 }
 
-@description('Path to the app code within the repository')
-param buildPath string = '/src'
-
-@description('Path to the build output')
-param outputPath string = ''
-
-@description('Path to the API code (if any)')
-param apiPath string = ''
-
-// Generate unique resource names using the template pattern
-var resourceToken = toLower(uniqueString(subscription().id, resourceGroup().id, location))
-var locationShort = 'eas'
-var staticWebAppName = '${resourcePrefix}-${siteName}-${locationShort}-${resourceToken}'
-
-// Output the configuration for verification
-output deploymentConfig object = {
-  siteName: siteName
-  staticWebAppName: staticWebAppName
-  location: location
-  repository: repositoryUrl
-  tier: staticWebAppSku
-  resourceToken: resourceToken
-}
-
-// Deploy the Static Web App
-module staticWebApp 'modules/staticwebapp.bicep' = {
-  name: 'deploy-${staticWebAppName}'
+// Static Web App module - using fixed name to prevent duplicates
+module staticWebApp 'core/host/staticwebapp.bicep' = {
+  name: 'staticwebapp'
   params: {
-    name: staticWebAppName
+    name: staticWebAppName  // Use fixed name instead of generated one
     location: location
-    repositoryUrl: repositoryUrl
-    repositoryBranch: repositoryBranch
-    skuName: staticWebAppSku
-    resourceTags: resourceTags
-    buildPath: buildPath
-    outputPath: outputPath
-    apiPath: apiPath
+    tags: union(tags, { 'azd-service-name': 'web' })
   }
 }
 
-// Output important information
-output staticWebAppUrl string = staticWebApp.outputs.defaultHostname
-output staticWebAppName string = staticWebAppName
-output resourceGroupName string = resourceGroup().name
+// Outputs for azd integration
+output AZURE_LOCATION string = location
+output AZURE_TENANT_ID string = tenant().tenantId
+output AZURE_SUBSCRIPTION_ID string = subscription().subscriptionId
+output AZURE_RESOURCE_GROUP string = resourceGroup().name
+output RESOURCE_GROUP_ID string = resourceGroup().id
+
+// Static Web App outputs
+output STATIC_WEB_APP_NAME string = staticWebApp.outputs.name
+output STATIC_WEB_APP_HOSTNAME string = staticWebApp.outputs.hostname
+output STATIC_WEB_APP_URL string = staticWebApp.outputs.uri
+output STATIC_WEB_APP_RESOURCE_ID string = staticWebApp.outputs.resourceId

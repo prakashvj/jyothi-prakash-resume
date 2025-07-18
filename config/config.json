@@ -1,0 +1,61 @@
+{
+  "deployment": {
+    "environment": "dev",
+    "region": "eastasia",
+    "resourceGroup": "jyothi-resume-RG",
+    "staticWebAppName": "jyothi-resume-WebApp",
+    "subscription": "776213a4-71bc-4091-861f-245ce8b18d84",
+    "tenant": "4f196d4e-cc09-4b51-ba8f-5ca648235093"
+  },
+  "monitoring": {
+    "healthChecks": {
+      "enabled": true,
+      "interval": 30,
+      "timeout": 30,
+      "retryCount": 3
+    },
+    "performance": {
+      "loadTimeThreshold": 5000,
+      "enableMetrics": true
+    },
+    "logging": {
+      "level": "INFO",
+      "enableFileLogging": true,
+      "enableConsoleLogging": true
+    }
+  },
+  "security": {
+    "enableHttps": true,
+    "enableHSTS": true,
+    "enableCSP": true,
+    "contentSecurityPolicy": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'"
+  },
+  "features": {
+    "stagingSlots": {
+      "enabled": true,
+      "preProductionValidation": true,
+      "automaticSwap": false
+    },
+    "rollback": {
+      "enabled": true,
+      "automatic": true,
+      "healthCheckThreshold": 3
+    },
+    "notifications": {
+      "deployment": true,
+      "rollback": true,
+      "healthChecks": false
+    }
+  },
+  "build": {
+    "outputPath": "src",
+    "skipBuild": true,
+    "staticFiles": [
+      "index.html",
+      "css/**/*",
+      "js/**/*",
+      "images/**/*",
+      "fonts/**/*"
+    ]
+  }
+}

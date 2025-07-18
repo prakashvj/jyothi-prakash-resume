@@ -1,0 +1,166 @@
+# Azure Static Web Apps Production Deployment Configuration
+
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: jyothi-resume-deployment
+  environment: dev
+  version: "1.0.0"
+
+deployment:
+  strategy: blue-green
+  platform: azure-static-web-apps
+  region: eastasia
+  
+  resources:
+    resourceGroup: jyothi-resume-RG
+    staticWebApp: jyothi-resume-WebApp
+    subscription: 776213a4-71bc-4091-861f-245ce8b18d84
+    tenant: 4f196d4e-cc09-4b51-ba8f-5ca648235093
+
+  stages:
+    - name: validation
+      tasks:
+        - validate-configuration
+        - check-authentication
+        - verify-dependencies
+        - validate-source-code
+        - validate-infrastructure
+    
+    - name: staging
+      tasks:
+        - deploy-to-staging
+        - run-health-checks
+        - performance-validation
+        - content-verification
+    
+    - name: production
+      tasks:
+        - swap-to-production
+        - verify-production-health
+        - monitor-for-issues
+        - cleanup-staging
+
+monitoring:
+  healthChecks:
+    enabled: true
+    endpoints:
+      - path: "/"
+        method: GET
+        expectedStatus: 200
+        timeout: 30
+        contentValidation: "Jyothi Prakash"
+      
+      - path: "/css/style.css"
+        method: GET
+        expectedStatus: 200
+        timeout: 15
+        contentType: "text/css"
+      
+      - path: "/js/main.js"
+        method: GET
+        expectedStatus: 200
+        timeout: 15
+        contentType: "application/javascript"
+  
+  performance:
+    thresholds:
+      loadTime: 5000
+      firstContentfulPaint: 2000
+      timeToInteractive: 3000
+    
+    metrics:
+      - pageLoadTime
+      - responseTime
+      - errorRate
+      - availabilityPercentage
+
+rollback:
+  strategy: automatic
+  triggers:
+    - healthCheckFailures: 3
+    - errorRate: 0.05
+    - responseTimeThreshold: 10000
+  
+  actions:
+    - revert-deployment
+    - verify-rollback-health
+    - send-notifications
+    - investigate-issues
+
+notifications:
+  channels:
+    - type: console
+      enabled: true
+    - type: file
+      enabled: true
+      path: "logs/deployment.log"
+    - type: azure-monitor
+      enabled: false
+    - type: teams
+      enabled: false
+    - type: email
+      enabled: false
+
+security:
+  authentication:
+    required: true
+    providers:
+      - azure-cli
+      - azure-developer-cli
+  
+  validation:
+    - configuration-integrity
+    - source-code-validation
+    - infrastructure-validation
+    - dependency-scanning
+
+build:
+  source: src/
+  output: dist/
+  skipBuild: true
+  staticFiles:
+    - "**/*.html"
+    - "**/*.css"
+    - "**/*.js"
+    - "**/*.png"
+    - "**/*.jpg"
+    - "**/*.gif"
+    - "**/*.svg"
+    - "**/*.ico"
+
+environments:
+  dev:
+    monitoring:
+      healthChecks:
+        interval: 60
+      performance:
+        thresholds:
+          loadTime: 10000
+    rollback:
+      automatic: false
+  
+  staging:
+    monitoring:
+      healthChecks:
+        interval: 45
+      performance:
+        thresholds:
+          loadTime: 7000
+    rollback:
+      automatic: true
+      triggers:
+        healthCheckFailures: 5
+  
+  prod:
+    monitoring:
+      healthChecks:
+        interval: 30
+      performance:
+        thresholds:
+          loadTime: 3000
+    rollback:
+      automatic: true
+      triggers:
+        healthCheckFailures: 2
+        errorRate: 0.02

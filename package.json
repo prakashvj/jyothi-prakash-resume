@@ -1,0 +1,37 @@
+{
+  "name": "jyothi-prakash-resume",
+  "version": "1.0.0",
+  "description": "Professional resume website hosted on Azure Static Web Apps",
+  "main": "src/index.html",
+  "scripts": {
+    "build": "echo 'Build complete - static site ready'",
+    "start": "echo 'Starting development server'",
+    "test": "echo 'Running tests'",
+    "deploy": "azd up",
+    "validate": ".\\scripts\\validate-deployment.ps1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/username/jyothi-prakash-resume.git"
+  },
+  "keywords": [
+    "resume",
+    "portfolio",
+    "azure",
+    "static-web-app",
+    "html",
+    "css",
+    "javascript"
+  ],
+  "author": "Jyothi Prakash",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "azd": {
+    "framework": "static",
+    "language": "html"
+  }
+}
