@@ -154,6 +154,22 @@ jobs:
           az --version
           az account show
 
+      - name: Initialize AZD Environment (if available)
+        if: steps.setup_azd.outputs.azd_available == 'true'
+        run: |
+          echo "🔧 Configuring Azure Developer CLI to use OIDC authentication..."
+          # Set AZD to use Azure CLI for authentication
+          export AZD_AUTH_TYPE="azurecli"
+          # Initialize AZD environment if it doesn't exist
+          if [ ! -f ".azure/prod/config.json" ]; then
+            echo "🆕 Initializing AZD environment..."
+            azd env new prod --location ${{ steps.config_validation.outputs.location }} --subscription ${{ steps.config_validation.outputs.azure_subscription_id }}
+          else
+            echo "✅ AZD environment already exists"
+          fi
+          # Set the current environment
+          azd env select prod
+
       - name: Check Existing Azure Resources
         id: check_resources
         run: |
@@ -224,6 +240,11 @@ jobs:
           
           if [ "${{ steps.setup_azd.outputs.azd_available }}" = "true" ]; then
             echo "📦 Using Azure Developer CLI for deployment..."
+            # Configure AZD to use the current Azure CLI context (OIDC authenticated)
+            export AZD_AUTH_TYPE="azurecli"
+            # Set environment for AZD
+            export AZURE_ENV_NAME=prod
+            export AZURE_LOCATION=$LOCATION
             azd provision --no-prompt
           else
             echo "📦 Using Azure CLI and Bicep for deployment..."
@@ -317,6 +338,10 @@ jobs:
           
           if [ "${{ steps.setup_azd.outputs.azd_available }}" = "true" ]; then
             echo "📦 Deploying content via AZD..."
+            # Configure AZD to use the current Azure CLI context (OIDC authenticated)
+            export AZD_AUTH_TYPE="azurecli"
+            export AZURE_ENV_NAME=prod
+            export AZURE_LOCATION="${{ steps.config_validation.outputs.location }}"
             azd deploy --no-prompt
           else
             echo "📦 Deploying content via Azure CLI..."
