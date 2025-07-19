@@ -6,16 +6,7 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    types: [opened, synchronize, reopened, c          echo "├── Custom Domain: https://${{ steps.config_validation.outputs.full_domain }}"
-          echo "└── Status: Live and Ready"
-          echo ""
-          echo "🌐 Access your resume at:"
-          if [ "${{ steps.config_validation.outputs.custom_domain_enabled }}" = "true" ]; then
-            echo "   https://${{ steps.config_validation.outputs.full_domain }}"
-          else
-            DEFAULT_HOSTNAME=$(az staticwebapp show --name ${{ steps.check_resources.outputs.static_web_app }} --resource-group ${{ steps.check_resources.outputs.resource_group }} --query "defaultHostname" --output tsv 2>/dev/null || echo "")
-            echo "   https://$DEFAULT_HOSTNAME"
-          fi]
+    types: [opened, synchronize, reopened, closed]
     branches: ["main"]
 
 env:
