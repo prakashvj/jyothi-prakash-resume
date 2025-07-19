@@ -10,10 +10,7 @@ on:
     branches: ["main"]
 
 env:
-  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-  AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  # No secrets needed for OIDC identifiers - read from config instead
 
 jobs:
   # Complete infrastructure and deployment job
@@ -21,6 +18,9 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     name: Complete Infrastructure and Deploy Job
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,10 +30,9 @@ jobs:
       - name: Azure Login
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          client-id: ${{ steps.config_validation.outputs.azure_client_id }}
+          tenant-id: ${{ steps.config_validation.outputs.azure_tenant_id }}
+          subscription-id: ${{ steps.config_validation.outputs.azure_subscription_id }}
 
       - name: Setup Azure Developer CLI
         uses: Azure/setup-azd@v0.1.0
@@ -58,6 +57,13 @@ jobs:
           RESOURCE_GROUP=$(jq -r '.environments.prod.azure.resourceGroup // "jyothi-resume-RG"' config/environments.json)
           STATIC_WEB_APP=$(jq -r '.environments.prod.azure.staticWebAppName // "jyothi-resume-WebApp"' config/environments.json)
           LOCATION=$(jq -r '.environments.prod.azure.location // "eastasia"' config/environments.json)
+          
+          # Extract Azure identity configuration
+          AZURE_CLIENT_ID=$(jq -r '.environments.prod.azure.auth.clientId // ""' config/environments.json)
+          AZURE_TENANT_ID=$(jq -r '.environments.prod.azure.auth.tenantId // ""' config/environments.json)
+          AZURE_SUBSCRIPTION_ID=$(jq -r '.environments.prod.azure.auth.subscriptionId // ""' config/environments.json)
+          
+          # Extract custom domain configuration
           CUSTOM_DOMAIN_ENABLED=$(jq -r '.environments.prod.azure.customDomain.enabled // false' config/environments.json)
           CUSTOM_DOMAIN_REQUIRED=$(jq -r '.environments.prod.azure.customDomain.required // false' config/environments.json)
           FRIENDLY_NAME=$(jq -r '.environments.prod.azure.customDomain.friendlyName // "jyothiventrapragada"' config/environments.json)
@@ -67,6 +73,25 @@ jobs:
           # Validate required configuration
           if [ "$RESOURCE_GROUP" = "null" ] || [ "$STATIC_WEB_APP" = "null" ]; then
             echo "❌ Missing required configuration in environments.json"
+            exit 1
+          fi
+          
+          # Validate Azure authentication configuration
+          if [ "$AZURE_CLIENT_ID" = "" ] || [ "$AZURE_CLIENT_ID" = "null" ]; then
+            echo "❌ Missing Azure Client ID in environments.json"
+            echo "📋 Please configure environments.prod.azure.auth.clientId"
+            exit 1
+          fi
+          
+          if [ "$AZURE_TENANT_ID" = "" ] || [ "$AZURE_TENANT_ID" = "null" ]; then
+            echo "❌ Missing Azure Tenant ID in environments.json"
+            echo "📋 Please configure environments.prod.azure.auth.tenantId"
+            exit 1
+          fi
+          
+          if [ "$AZURE_SUBSCRIPTION_ID" = "" ] || [ "$AZURE_SUBSCRIPTION_ID" = "null" ]; then
+            echo "❌ Missing Azure Subscription ID in environments.json"
+            echo "📋 Please configure environments.prod.azure.auth.subscriptionId"
             exit 1
           fi
           
@@ -91,6 +116,9 @@ jobs:
           echo "   Resource Group: $RESOURCE_GROUP"
           echo "   Static Web App: $STATIC_WEB_APP"
           echo "   Location: $LOCATION"
+          echo "   Azure Client ID: $AZURE_CLIENT_ID"
+          echo "   Azure Tenant ID: $AZURE_TENANT_ID"
+          echo "   Azure Subscription ID: $AZURE_SUBSCRIPTION_ID"
           echo "   Custom Domain: $CUSTOM_DOMAIN_ENABLED"
           if [ "$CUSTOM_DOMAIN_ENABLED" = "true" ]; then
             echo "   Domain: $FULL_DOMAIN ($DOMAIN_TYPE)"
@@ -100,6 +128,9 @@ jobs:
           echo "resource_group=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
           echo "static_web_app=$STATIC_WEB_APP" >> $GITHUB_OUTPUT
           echo "location=$LOCATION" >> $GITHUB_OUTPUT
+          echo "azure_client_id=$AZURE_CLIENT_ID" >> $GITHUB_OUTPUT
+          echo "azure_tenant_id=$AZURE_TENANT_ID" >> $GITHUB_OUTPUT
+          echo "azure_subscription_id=$AZURE_SUBSCRIPTION_ID" >> $GITHUB_OUTPUT
           echo "custom_domain_enabled=$CUSTOM_DOMAIN_ENABLED" >> $GITHUB_OUTPUT
           echo "friendly_name=$FRIENDLY_NAME" >> $GITHUB_OUTPUT
           echo "full_domain=$FULL_DOMAIN" >> $GITHUB_OUTPUT
@@ -182,6 +213,26 @@ jobs:
           echo "✅ Static Web App: ${{ steps.check_resources.outputs.static_web_app }}"
           echo "📋 Configuration matches desired state"
 
+      - name: Get Static Web App API Token (For Existing Infrastructure)
+        if: steps.check_resources.outputs.skip_provisioning == 'true' && steps.check_resources.outputs.resource_changed != 'true'
+        id: get_existing_api_token
+        run: |
+          echo "🔑 Retrieving Static Web App API token for existing infrastructure..."
+          
+          RESOURCE_GROUP="${{ steps.check_resources.outputs.resource_group }}"
+          STATIC_WEB_APP="${{ steps.config_validation.outputs.static_web_app }}"
+          
+          # Get the API token from the existing Static Web App
+          API_TOKEN=$(az staticwebapp secrets list --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --query "properties.apiKey" --output tsv)
+          
+          if [ -n "$API_TOKEN" ] && [ "$API_TOKEN" != "null" ]; then
+            echo "✅ API token retrieved successfully"
+            echo "api_token=$API_TOKEN" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ Could not retrieve API token"
+            echo "api_token=" >> $GITHUB_OUTPUT
+          fi
+
       - name: Detect Content Changes
         id: content_changes
         run: |
@@ -221,11 +272,32 @@ jobs:
           echo "📦 Deploying content via AZD (with infrastructure)..."
           azd deploy --no-prompt
 
+      - name: Get Static Web App API Token (For Future Deployments)
+        if: steps.check_resources.outputs.skip_provisioning != 'true' || steps.check_resources.outputs.resource_changed == 'true'
+        id: get_api_token
+        run: |
+          echo "🔑 Retrieving Static Web App API token..."
+          
+          RESOURCE_GROUP="${{ steps.check_resources.outputs.resource_group }}"
+          STATIC_WEB_APP="${{ steps.config_validation.outputs.static_web_app }}"
+          
+          # Get the API token from the Static Web App
+          API_TOKEN=$(az staticwebapp secrets list --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --query "properties.apiKey" --output tsv)
+          
+          if [ -n "$API_TOKEN" ] && [ "$API_TOKEN" != "null" ]; then
+            echo "✅ API token retrieved successfully"
+            echo "💡 You can add this as AZURE_STATIC_WEB_APPS_API_TOKEN secret for future content-only deployments:"
+            echo "    Token: $API_TOKEN"
+            echo "api_token=$API_TOKEN" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ Could not retrieve API token"
+          fi
+
       - name: Deploy Content Only (Existing Infrastructure)
         if: steps.check_resources.outputs.skip_provisioning == 'true' && steps.check_resources.outputs.resource_changed != 'true' && steps.content_changes.outputs.content_changed == 'true'
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN || steps.get_existing_api_token.outputs.api_token || steps.get_api_token.outputs.api_token }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/src"
@@ -313,6 +385,9 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
     name: Close Pull Request Job
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Close Pull Request
         id: closepullrequest
