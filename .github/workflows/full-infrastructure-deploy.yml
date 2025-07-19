@@ -6,7 +6,11 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened, c          echo "├── Custom Domain: https://mango-water-0502ea200.1.azurestaticapps.net"
+          echo "└── Status: Live and Ready"
+          echo ""
+          echo "🌐 Access your resume at:"
+          echo "   https://mango-water-0502ea200.1.azurestaticapps.net"]
     branches: ["main"]
 
 env:
@@ -267,11 +271,11 @@ jobs:
             echo "├── Resource Group: ${{ secrets.AZURE_RESOURCE_GROUP_NAME || 'jyothi-resume-RG' }}"
             echo "├── Static Web App: ${{ secrets.AZURE_STATIC_WEB_APP_NAME || 'jyothi-resume-WebApp' }}"
           fi
-          echo "├── Custom Domain: https://jyothiventrapragada.azurestaticapps.net"
+          echo "├── Custom Domain: https://salmon-beach-08fd1aa00.1.azurestaticapps.net"
           echo "└── Status: Live and Ready"
           echo ""
           echo "🌐 Access your resume at:"
-          echo "   https://jyothiventrapragada.azurestaticapps.net"
+          echo "   https://salmon-beach-08fd1aa00.1.azurestaticapps.net"
 
   # Close pull request job
   close_pull_request_job:

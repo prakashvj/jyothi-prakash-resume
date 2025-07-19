@@ -72,12 +72,12 @@
         "location": "eastasia",
         "environmentName": "prod",
         "resourceGroup": "jyothi-resume-RG",
-        "staticWebAppName": "jyothi-resume-WebApp",
+        "staticWebAppName": "mango-water-0502ea200",
         "customDomain": {
           "enabled": true,
-          "friendlyName": "jyothiventrapragada",
+          "friendlyName": "mango-water-0502ea200",
           "domainType": "azurestaticapps",
-          "fullDomain": "jyothiventrapragada.azurestaticapps.net",
+          "fullDomain": "mango-water-0502ea200.1.azurestaticapps.net",
           "autoConfigureDNS": true
         }
       },
