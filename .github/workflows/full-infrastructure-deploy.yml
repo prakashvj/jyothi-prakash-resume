@@ -26,20 +26,8 @@ jobs:
           submodules: true
           lfs: false
 
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          client-id: ${{ steps.config_validation.outputs.azure_client_id }}
-          tenant-id: ${{ steps.config_validation.outputs.azure_tenant_id }}
-          subscription-id: ${{ steps.config_validation.outputs.azure_subscription_id }}
-
       - name: Setup Azure Developer CLI
         uses: Azure/setup-azd@v0.1.0
-
-      - name: Azure CLI Setup
-        run: |
-          az --version
-          az account show
 
       - name: Read and Validate Configuration
         id: config_validation
@@ -75,23 +63,16 @@ jobs:
             exit 1
           fi
           
-          # Validate Azure authentication configuration
-          if [ "$AZURE_CLIENT_ID" = "" ] || [ "$AZURE_CLIENT_ID" = "null" ]; then
-            echo "❌ Missing Azure Client ID in environments.json"
-            echo "📋 Please configure environments.prod.azure.auth.clientId"
-            exit 1
-          fi
-          
-          if [ "$AZURE_TENANT_ID" = "" ] || [ "$AZURE_TENANT_ID" = "null" ]; then
-            echo "❌ Missing Azure Tenant ID in environments.json"
-            echo "📋 Please configure environments.prod.azure.auth.tenantId"
-            exit 1
-          fi
-          
-          if [ "$AZURE_SUBSCRIPTION_ID" = "" ] || [ "$AZURE_SUBSCRIPTION_ID" = "null" ]; then
-            echo "❌ Missing Azure Subscription ID in environments.json"
-            echo "📋 Please configure environments.prod.azure.auth.subscriptionId"
-            exit 1
+          # Check if OIDC configuration is available
+          USE_INTERACTIVE_LOGIN="false"
+          if [ "$AZURE_CLIENT_ID" = "" ] || [ "$AZURE_CLIENT_ID" = "null" ] || 
+             [ "$AZURE_TENANT_ID" = "" ] || [ "$AZURE_TENANT_ID" = "null" ] || 
+             [ "$AZURE_SUBSCRIPTION_ID" = "" ] || [ "$AZURE_SUBSCRIPTION_ID" = "null" ]; then
+            echo "⚠️ OIDC configuration not found in environments.json"
+            echo "🔐 Will use interactive Azure CLI login instead"
+            USE_INTERACTIVE_LOGIN="true"
+          else
+            echo "✅ OIDC configuration found - using federated identity"
           fi
           
           # Validate custom domain if required
@@ -115,9 +96,12 @@ jobs:
           echo "   Resource Group: $RESOURCE_GROUP"
           echo "   Static Web App: $STATIC_WEB_APP"
           echo "   Location: $LOCATION"
-          echo "   Azure Client ID: $AZURE_CLIENT_ID"
-          echo "   Azure Tenant ID: $AZURE_TENANT_ID"
-          echo "   Azure Subscription ID: $AZURE_SUBSCRIPTION_ID"
+          echo "   Authentication: $([ "$USE_INTERACTIVE_LOGIN" = "true" ] && echo "Interactive CLI" || echo "OIDC Federated")"
+          if [ "$USE_INTERACTIVE_LOGIN" = "false" ]; then
+            echo "   Azure Client ID: $AZURE_CLIENT_ID"
+            echo "   Azure Tenant ID: $AZURE_TENANT_ID"
+            echo "   Azure Subscription ID: $AZURE_SUBSCRIPTION_ID"
+          fi
           echo "   Custom Domain: $CUSTOM_DOMAIN_ENABLED"
           if [ "$CUSTOM_DOMAIN_ENABLED" = "true" ]; then
             echo "   Domain: $FULL_DOMAIN ($DOMAIN_TYPE)"
@@ -127,6 +111,7 @@ jobs:
           echo "resource_group=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
           echo "static_web_app=$STATIC_WEB_APP" >> $GITHUB_OUTPUT
           echo "location=$LOCATION" >> $GITHUB_OUTPUT
+          echo "use_interactive_login=$USE_INTERACTIVE_LOGIN" >> $GITHUB_OUTPUT
           echo "azure_client_id=$AZURE_CLIENT_ID" >> $GITHUB_OUTPUT
           echo "azure_tenant_id=$AZURE_TENANT_ID" >> $GITHUB_OUTPUT
           echo "azure_subscription_id=$AZURE_SUBSCRIPTION_ID" >> $GITHUB_OUTPUT
@@ -134,6 +119,27 @@ jobs:
           echo "friendly_name=$FRIENDLY_NAME" >> $GITHUB_OUTPUT
           echo "full_domain=$FULL_DOMAIN" >> $GITHUB_OUTPUT
           echo "domain_type=$DOMAIN_TYPE" >> $GITHUB_OUTPUT
+
+      - name: Azure Login (OIDC)
+        if: steps.config_validation.outputs.use_interactive_login != 'true'
+        uses: azure/login@v1
+        with:
+          client-id: ${{ steps.config_validation.outputs.azure_client_id }}
+          tenant-id: ${{ steps.config_validation.outputs.azure_tenant_id }}
+          subscription-id: ${{ steps.config_validation.outputs.azure_subscription_id }}
+
+      - name: Azure Login (Interactive)
+        if: steps.config_validation.outputs.use_interactive_login == 'true'
+        run: |
+          echo "🔐 Interactive Azure login required"
+          echo "📋 Please run 'az login' locally and set up OIDC federated identity for automatic authentication"
+          echo "💡 For now, using Azure CLI with default credentials"
+          az login --use-device-code
+
+      - name: Azure CLI Setup
+        run: |
+          az --version
+          az account show
 
       - name: Check Existing Azure Resources
         id: check_resources
