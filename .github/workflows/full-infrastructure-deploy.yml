@@ -9,8 +9,7 @@ on:
     types: [opened, synchronize, reopened, closed]
     branches: ["main"]
 
-env:
-  # No secrets needed for OIDC identifiers - read from config instead
+# No environment variables needed - all configuration read from environments.json
 
 jobs:
   # Complete infrastructure and deployment job
