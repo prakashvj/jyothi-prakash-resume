@@ -26,21 +26,13 @@ jobs:
           submodules: true
           lfs: false
 
-      - name: Setup Azure Developer CLI
+      - name: Setup Azure Developer CLI (Optional)
         id: setup_azd
         continue-on-error: true
         run: |
-          echo "🔧 Installing Azure Developer CLI..."
-          
-          # Try alternative installation methods
-          if curl -fsSL https://aka.ms/install-azd.sh | bash; then
-            echo "✅ Azure Developer CLI installed successfully"
-            echo "azd_available=true" >> $GITHUB_OUTPUT
-          else
-            echo "⚠️ Azure Developer CLI installation failed"
-            echo "📋 Will use Azure CLI and Bicep for deployment instead"
-            echo "azd_available=false" >> $GITHUB_OUTPUT
-          fi
+          echo "🔧 Azure Developer CLI setup disabled for reliable CI/CD..."
+          echo "� Using Azure CLI and Bicep for deployment instead"
+          echo "azd_available=false" >> $GITHUB_OUTPUT
 
       - name: Read and Validate Configuration
         id: config_validation
@@ -153,22 +145,7 @@ jobs:
         run: |
           az --version
           az account show
-
-      - name: Initialize AZD Environment (if available)
-        if: steps.setup_azd.outputs.azd_available == 'true'
-        run: |
-          echo "🔧 Configuring Azure Developer CLI to use OIDC authentication..."
-          # Set AZD to use Azure CLI for authentication
-          export AZD_AUTH_TYPE="azurecli"
-          # Initialize AZD environment if it doesn't exist
-          if [ ! -f ".azure/prod/config.json" ]; then
-            echo "🆕 Initializing AZD environment..."
-            azd env new prod --location ${{ steps.config_validation.outputs.location }} --subscription ${{ steps.config_validation.outputs.azure_subscription_id }}
-          else
-            echo "✅ AZD environment already exists"
-          fi
-          # Set the current environment
-          azd env select prod
+          echo "🔧 Using Azure CLI and Bicep for reliable CI/CD deployment"
 
       - name: Check Existing Azure Resources
         id: check_resources
@@ -238,33 +215,24 @@ jobs:
           STATIC_WEB_APP="${{ steps.config_validation.outputs.static_web_app }}"
           LOCATION="${{ steps.config_validation.outputs.location }}"
           
-          if [ "${{ steps.setup_azd.outputs.azd_available }}" = "true" ]; then
-            echo "📦 Using Azure Developer CLI for deployment..."
-            # Configure AZD to use the current Azure CLI context (OIDC authenticated)
-            export AZD_AUTH_TYPE="azurecli"
-            # Set environment for AZD
-            export AZURE_ENV_NAME=prod
-            export AZURE_LOCATION=$LOCATION
-            azd provision --no-prompt
-          else
-            echo "📦 Using Azure CLI and Bicep for deployment..."
-            
-            # Create resource group if it doesn't exist
-            if ! az group exists --name $RESOURCE_GROUP; then
-              echo "🏗️ Creating resource group: $RESOURCE_GROUP"
-              az group create --name $RESOURCE_GROUP --location $LOCATION
-            fi
-            
-            # Deploy using Bicep
-            echo "🚀 Deploying Static Web App using Bicep..."
-            az deployment group create \
-              --resource-group $RESOURCE_GROUP \
-              --template-file infra/main.bicep \
-              --parameters \
-                staticWebAppName=$STATIC_WEB_APP \
-                location=$LOCATION \
-                environmentName=prod
+          # Use Azure CLI and Bicep for reliable CI/CD deployment
+          echo "📦 Using Azure CLI and Bicep for deployment..."
+          
+          # Create resource group if it doesn't exist
+          if ! az group exists --name $RESOURCE_GROUP; then
+            echo "🏗️ Creating resource group: $RESOURCE_GROUP"
+            az group create --name $RESOURCE_GROUP --location $LOCATION
           fi
+          
+          # Deploy using Bicep
+          echo "🚀 Deploying Static Web App using Bicep..."
+          az deployment group create \
+            --resource-group $RESOURCE_GROUP \
+            --template-file infra/main.bicep \
+            --parameters \
+              staticWebAppName=$STATIC_WEB_APP \
+              location=$LOCATION \
+              environmentName=prod
         env:
           AZURE_ENV_NAME: prod
           AZURE_LOCATION: ${{ steps.config_validation.outputs.location }}
@@ -336,34 +304,30 @@ jobs:
           RESOURCE_GROUP="${{ steps.check_resources.outputs.resource_group }}"
           STATIC_WEB_APP="${{ steps.config_validation.outputs.static_web_app }}"
           
-          if [ "${{ steps.setup_azd.outputs.azd_available }}" = "true" ]; then
-            echo "📦 Deploying content via AZD..."
-            # Configure AZD to use the current Azure CLI context (OIDC authenticated)
-            export AZD_AUTH_TYPE="azurecli"
-            export AZURE_ENV_NAME=prod
-            export AZURE_LOCATION="${{ steps.config_validation.outputs.location }}"
-            azd deploy --no-prompt
+          echo "📦 Deploying content via Azure CLI..."
+          
+          # Get the API token for deployment
+          API_TOKEN=$(az staticwebapp secrets list --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --query "properties.apiKey" --output tsv)
+          
+          if [ -n "$API_TOKEN" ] && [ "$API_TOKEN" != "null" ]; then
+            echo "✅ API token retrieved successfully"
+            echo "api_token=$API_TOKEN" >> $GITHUB_OUTPUT
           else
-            echo "📦 Deploying content via Azure CLI..."
-            
-            # Get the API token for deployment
-            API_TOKEN=$(az staticwebapp secrets list --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --query "properties.apiKey" --output tsv)
-            
-            if [ -n "$API_TOKEN" ] && [ "$API_TOKEN" != "null" ]; then
-              echo "✅ Using Static Web Apps CLI for content deployment"
-              
-              # Install SWA CLI if not available
-              if ! command -v swa &> /dev/null; then
-                npm install -g @azure/static-web-apps-cli
-              fi
-              
-              # Deploy content using SWA CLI
-              swa deploy ./src --deployment-token "$API_TOKEN"
-            else
-              echo "⚠️ Could not retrieve API token for content deployment"
-              echo "📋 Static Web App created successfully, please deploy content manually"
-            fi
+            echo "⚠️ Could not retrieve API token for content deployment"
+            echo "📋 Static Web App created successfully, please deploy content manually"
           fi
+        id: new_infrastructure_token
+
+      - name: Deploy Content to New Infrastructure (Using Static Web Apps Action)
+        if: (steps.check_resources.outputs.skip_provisioning != 'true' || steps.check_resources.outputs.resource_changed == 'true') && steps.new_infrastructure_token.outputs.api_token != ''
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ steps.new_infrastructure_token.outputs.api_token }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/src"
+          api_location: ""
+          output_location: ""
 
       - name: Get Static Web App API Token (For Future Deployments)
         if: steps.check_resources.outputs.skip_provisioning != 'true' || steps.check_resources.outputs.resource_changed == 'true'
