@@ -72,7 +72,7 @@
         "location": "eastasia",
         "environmentName": "prod",
         "resourceGroup": "jyothi-resume-RG",
-        "staticWebAppName": "jyothiventrapragada",
+        "staticWebAppName": "jyothi-prakash-resume-prod",
         "auth": {
           "clientId": "7a41cd11-5f2e-4cb6-8146-1540a57dba02",
           "tenantId": "4f196d4e-cc09-4b51-ba8f-5ca648235093",

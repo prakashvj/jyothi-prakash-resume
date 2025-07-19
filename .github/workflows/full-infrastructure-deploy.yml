@@ -226,13 +226,21 @@ jobs:
           
           # Deploy using Bicep
           echo "🚀 Deploying Static Web App using Bicep..."
+          echo "Parameters:"
+          echo "  - Resource Group: $RESOURCE_GROUP"
+          echo "  - Static Web App: $STATIC_WEB_APP"
+          echo "  - Location: $LOCATION"
+          echo "  - Environment: prod"
+          
           az deployment group create \
             --resource-group $RESOURCE_GROUP \
             --template-file infra/main.bicep \
             --parameters \
-              staticWebAppName=$STATIC_WEB_APP \
-              location=$LOCATION \
-              environmentName=prod
+              environmentName="prod" \
+              location="$LOCATION" \
+              staticWebAppName="$STATIC_WEB_APP" \
+            --verbose \
+            --debug
         env:
           AZURE_ENV_NAME: prod
           AZURE_LOCATION: ${{ steps.config_validation.outputs.location }}
