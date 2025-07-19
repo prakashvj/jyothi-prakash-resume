@@ -72,13 +72,19 @@
         "location": "eastasia",
         "environmentName": "prod",
         "resourceGroup": "jyothi-resume-RG",
-        "staticWebAppName": "mango-water-0502ea200",
+        "staticWebAppName": "jyothiventrapragada",
         "customDomain": {
           "enabled": true,
-          "friendlyName": "mango-water-0502ea200",
-          "domainType": "azurestaticapps",
-          "fullDomain": "mango-water-0502ea200.1.azurestaticapps.net",
-          "autoConfigureDNS": true
+          "required": true,
+          "friendlyName": "jyothiventrapragada",
+          "domainType": "external",
+          "fullDomain": "jyothiventrapragada.com",
+          "autoConfigureDNS": false,
+          "description": "Custom domain for the resume website. This is mandatory for professional deployment.",
+          "validation": {
+            "pattern": "^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\\.[a-z]{2,}$",
+            "example": "yourname.com or resume.yourname.com"
+          }
         }
       },
       "deployment": {

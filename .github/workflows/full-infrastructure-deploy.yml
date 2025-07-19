@@ -6,11 +6,16 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    types: [opened, synchronize, reopened, c          echo "├── Custom Domain: https://mango-water-0502ea200.1.azurestaticapps.net"
+    types: [opened, synchronize, reopened, c          echo "├── Custom Domain: https://${{ steps.config_validation.outputs.full_domain }}"
           echo "└── Status: Live and Ready"
           echo ""
           echo "🌐 Access your resume at:"
-          echo "   https://mango-water-0502ea200.1.azurestaticapps.net"]
+          if [ "${{ steps.config_validation.outputs.custom_domain_enabled }}" = "true" ]; then
+            echo "   https://${{ steps.config_validation.outputs.full_domain }}"
+          else
+            DEFAULT_HOSTNAME=$(az staticwebapp show --name ${{ steps.check_resources.outputs.static_web_app }} --resource-group ${{ steps.check_resources.outputs.resource_group }} --query "defaultHostname" --output tsv 2>/dev/null || echo "")
+            echo "   https://$DEFAULT_HOSTNAME"
+          fi]
     branches: ["main"]
 
 env:
@@ -58,7 +63,10 @@ jobs:
           STATIC_WEB_APP=$(jq -r '.environments.prod.azure.staticWebAppName // "jyothi-resume-WebApp"' config/environments.json)
           LOCATION=$(jq -r '.environments.prod.azure.location // "eastasia"' config/environments.json)
           CUSTOM_DOMAIN_ENABLED=$(jq -r '.environments.prod.azure.customDomain.enabled // false' config/environments.json)
+          CUSTOM_DOMAIN_REQUIRED=$(jq -r '.environments.prod.azure.customDomain.required // false' config/environments.json)
           FRIENDLY_NAME=$(jq -r '.environments.prod.azure.customDomain.friendlyName // "jyothiventrapragada"' config/environments.json)
+          FULL_DOMAIN=$(jq -r '.environments.prod.azure.customDomain.fullDomain // ""' config/environments.json)
+          DOMAIN_TYPE=$(jq -r '.environments.prod.azure.customDomain.domainType // "external"' config/environments.json)
           
           # Validate required configuration
           if [ "$RESOURCE_GROUP" = "null" ] || [ "$STATIC_WEB_APP" = "null" ]; then
@@ -66,11 +74,31 @@ jobs:
             exit 1
           fi
           
+          # Validate custom domain if required
+          if [ "$CUSTOM_DOMAIN_REQUIRED" = "true" ]; then
+            if [ "$FULL_DOMAIN" = "" ] || [ "$FULL_DOMAIN" = "null" ]; then
+              echo "❌ Custom domain is required but not configured in environments.json"
+              echo "📋 Please configure environments.prod.azure.customDomain.fullDomain"
+              echo "💡 Example: yourname.com or resume.yourname.com"
+              exit 1
+            fi
+            
+            # Validate domain format
+            if ! echo "$FULL_DOMAIN" | grep -E '^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\.[a-z]{2,}$'; then
+              echo "❌ Invalid domain format: $FULL_DOMAIN"
+              echo "💡 Domain must be like: yourname.com or subdomain.yourname.com"
+              exit 1
+            fi
+          fi
+          
           echo "✅ Configuration validated:"
           echo "   Resource Group: $RESOURCE_GROUP"
           echo "   Static Web App: $STATIC_WEB_APP"
           echo "   Location: $LOCATION"
           echo "   Custom Domain: $CUSTOM_DOMAIN_ENABLED"
+          if [ "$CUSTOM_DOMAIN_ENABLED" = "true" ]; then
+            echo "   Domain: $FULL_DOMAIN ($DOMAIN_TYPE)"
+          fi
           
           # Set outputs for later steps
           echo "resource_group=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
@@ -78,6 +106,8 @@ jobs:
           echo "location=$LOCATION" >> $GITHUB_OUTPUT
           echo "custom_domain_enabled=$CUSTOM_DOMAIN_ENABLED" >> $GITHUB_OUTPUT
           echo "friendly_name=$FRIENDLY_NAME" >> $GITHUB_OUTPUT
+          echo "full_domain=$FULL_DOMAIN" >> $GITHUB_OUTPUT
+          echo "domain_type=$DOMAIN_TYPE" >> $GITHUB_OUTPUT
 
       - name: Check Existing Azure Resources
         id: check_resources
@@ -218,35 +248,40 @@ jobs:
           echo "🌐 Configuring custom domain..."
           
           RESOURCE_GROUP="${{ steps.check_resources.outputs.resource_group }}"
-          STATIC_WEB_APP="${{ steps.check_resources.outputs.static_web_app }}"
-          FRIENDLY_NAME="${{ steps.config_validation.outputs.friendly_name }}"
-          CUSTOM_DOMAIN="${FRIENDLY_NAME}.azurestaticapps.net"
+          STATIC_WEB_APP="${{ steps.config_validation.outputs.static_web_app }}"
+          FULL_DOMAIN="${{ steps.config_validation.outputs.full_domain }}"
+          DOMAIN_TYPE="${{ steps.config_validation.outputs.domain_type }}"
           
           echo "Resource Group: $RESOURCE_GROUP"
           echo "Static Web App: $STATIC_WEB_APP"
-          echo "Custom Domain: $CUSTOM_DOMAIN"
+          echo "Custom Domain: $FULL_DOMAIN"
+          echo "Domain Type: $DOMAIN_TYPE"
           
           # Verify Static Web App exists
           SWA_EXISTS=$(az staticwebapp list --resource-group $RESOURCE_GROUP --query "[?name=='$STATIC_WEB_APP'].name" --output tsv)
           
           if [ -z "$SWA_EXISTS" ]; then
             echo "❌ Static Web App not found: $STATIC_WEB_APP"
-            exit 1
-          fi
-          
-          # Check if custom domain already exists
-          EXISTING_DOMAIN=$(az staticwebapp hostname list --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --query "[?name=='$CUSTOM_DOMAIN'].name" --output tsv 2>/dev/null || echo "")
-          
-          if [ -z "$EXISTING_DOMAIN" ]; then
-            echo "🔧 Configuring custom domain: $CUSTOM_DOMAIN"
-            az staticwebapp hostname set --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --hostname $CUSTOM_DOMAIN
-            if [ $? -eq 0 ]; then
-              echo "✅ Custom domain configured successfully"
-            else
-              echo "⚠️ Custom domain configuration failed, but deployment continues"
-            fi
+            echo "ℹ️ Custom domain will be configured after infrastructure deployment"
           else
-            echo "✅ Custom domain already exists: $CUSTOM_DOMAIN"
+            # Check if custom domain already exists
+            EXISTING_DOMAIN=$(az staticwebapp hostname list --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --query "[?name=='$FULL_DOMAIN'].name" --output tsv 2>/dev/null || echo "")
+            
+            if [ -z "$EXISTING_DOMAIN" ]; then
+              echo "🔧 Adding custom domain: $FULL_DOMAIN"
+              az staticwebapp hostname set --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --hostname $FULL_DOMAIN
+              if [ $? -eq 0 ]; then
+                echo "✅ Custom domain configured successfully"
+                echo "📋 Please update your DNS to point $FULL_DOMAIN to:"
+                DEFAULT_HOSTNAME=$(az staticwebapp show --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --query "defaultHostname" --output tsv)
+                echo "    CNAME: $DEFAULT_HOSTNAME"
+              else
+                echo "⚠️ Custom domain configuration failed"
+                echo "💡 You can configure this manually in Azure Portal later"
+              fi
+            else
+              echo "✅ Custom domain already exists: $FULL_DOMAIN"
+            fi
           fi
 
       - name: Skip Custom Domain Configuration
