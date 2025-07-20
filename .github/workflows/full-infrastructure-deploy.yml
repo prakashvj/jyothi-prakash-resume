@@ -432,12 +432,30 @@ jobs:
             
             if [ -z "$EXISTING_DOMAIN" ]; then
               echo "🔧 Adding custom domain: $FULL_DOMAIN"
-              az staticwebapp hostname set --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --hostname $FULL_DOMAIN
+              
+              # Check if this is an apex domain (no subdomain)
+              if [[ "$FULL_DOMAIN" == *.*.* ]]; then
+                # Has subdomain, use default CNAME validation
+                echo "📋 Subdomain detected - using CNAME validation"
+                az staticwebapp hostname set --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --hostname $FULL_DOMAIN
+              else
+                # Apex domain, use DNS TXT validation
+                echo "📋 Apex domain detected - using DNS TXT validation"
+                az staticwebapp hostname set --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --hostname $FULL_DOMAIN --validation-method dns-txt-token
+              fi
+              
               if [ $? -eq 0 ]; then
                 echo "✅ Custom domain configured successfully"
-                echo "📋 Please update your DNS to point $FULL_DOMAIN to:"
+                echo "📋 Please update your DNS configuration:"
                 DEFAULT_HOSTNAME=$(az staticwebapp show --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --query "defaultHostname" --output tsv)
-                echo "    CNAME: $DEFAULT_HOSTNAME"
+                
+                if [[ "$FULL_DOMAIN" == *.*.* ]]; then
+                  echo "    CNAME Record: $FULL_DOMAIN -> $DEFAULT_HOSTNAME"
+                else
+                  echo "    For apex domain $FULL_DOMAIN:"
+                  echo "    1. Add A record: @ -> $(dig +short $DEFAULT_HOSTNAME | head -1)"
+                  echo "    2. Add TXT record for domain validation (check Azure Portal for exact value)"
+                fi
               else
                 echo "⚠️ Custom domain configuration failed"
                 echo "💡 You can configure this manually in Azure Portal later"
@@ -469,11 +487,14 @@ jobs:
             echo "├── Resource Group: ${{ secrets.AZURE_RESOURCE_GROUP_NAME || 'jyothi-resume-RG' }}"
             echo "├── Static Web App: ${{ secrets.AZURE_STATIC_WEB_APP_NAME || 'jyothi-resume-WebApp' }}"
           fi
-          echo "├── Custom Domain: https://salmon-beach-08fd1aa00.1.azurestaticapps.net"
+          echo "├── Custom Domain: ${{ steps.config_validation.outputs.custom_domain_enabled == 'true' && steps.config_validation.outputs.full_domain || 'https://calm-island-03caddd00.1.azurestaticapps.net' }}"
           echo "└── Status: Live and Ready"
           echo ""
           echo "🌐 Access your resume at:"
-          echo "   https://salmon-beach-08fd1aa00.1.azurestaticapps.net"
+          echo "   https://calm-island-03caddd00.1.azurestaticapps.net"
+          if [ "${{ steps.config_validation.outputs.custom_domain_enabled }}" = "true" ]; then
+            echo "   Custom Domain: ${{ steps.config_validation.outputs.full_domain }} (after DNS configuration)"
+          fi
 
   # Close pull request job
   close_pull_request_job:
