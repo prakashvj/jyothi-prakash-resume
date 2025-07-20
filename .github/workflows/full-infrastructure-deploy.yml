@@ -220,30 +220,40 @@ jobs:
           
           # Always ensure resource group exists first
           echo "🏗️ Ensuring resource group exists: $RESOURCE_GROUP"
-          if ! az group exists --name $RESOURCE_GROUP; then
-            echo "🏗️ Creating resource group: $RESOURCE_GROUP"
-            az group create --name $RESOURCE_GROUP --location $LOCATION
-            if [ $? -ne 0 ]; then
+          echo "🔍 Current subscription and account info:"
+          az account show --query "{subscriptionId:id, tenantId:tenantId, name:name}" --output table
+          
+          # Check current resource groups
+          echo "🔍 Checking existing resource groups..."
+          RG_EXISTS=$(az group exists --name $RESOURCE_GROUP)
+          echo "Resource group '$RESOURCE_GROUP' exists: $RG_EXISTS"
+          
+          if [ "$RG_EXISTS" != "true" ]; then
+            echo "🏗️ Creating resource group: $RESOURCE_GROUP in location: $LOCATION"
+            az group create --name $RESOURCE_GROUP --location $LOCATION --output table
+            
+            if [ $? -eq 0 ]; then
+              echo "✅ Resource group creation command completed"
+              # Wait a moment for Azure to propagate
+              sleep 5
+              
+              # Verify creation
+              RG_EXISTS_AFTER=$(az group exists --name $RESOURCE_GROUP)
+              if [ "$RG_EXISTS_AFTER" = "true" ]; then
+                echo "✅ Resource group verified after creation"
+              else
+                echo "❌ Resource group verification failed after creation"
+                echo "🔍 Listing all resource groups:"
+                az group list --query "[].{Name:name, Location:location}" --output table
+                exit 1
+              fi
+            else
               echo "❌ Failed to create resource group"
               exit 1
             fi
-            echo "✅ Resource group created successfully"
-            # Give Azure a moment to propagate the resource group
-            sleep 5
           else
             echo "✅ Resource group already exists"
           fi
-          
-          # Verify resource group exists before deployment
-          echo "🔍 Verifying resource group exists..."
-          RG_CHECK=$(az group exists --name $RESOURCE_GROUP)
-          if [ "$RG_CHECK" != "true" ]; then
-            echo "❌ Resource group verification failed"
-            echo "🔍 Listing all resource groups for debugging..."
-            az group list --query "[].name" --output table
-            exit 1
-          fi
-          echo "✅ Resource group verified"
           
           # Deploy using Bicep
           echo "🚀 Deploying Static Web App using Bicep..."
