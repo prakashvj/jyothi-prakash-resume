@@ -437,25 +437,27 @@ jobs:
               if [[ "$FULL_DOMAIN" == *.*.* ]]; then
                 # Has subdomain, use default CNAME validation
                 echo "📋 Subdomain detected - using CNAME validation"
-                az staticwebapp hostname set --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --hostname $FULL_DOMAIN
+                az staticwebapp hostname set --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --hostname $FULL_DOMAIN --no-wait
               else
                 # Apex domain, use DNS TXT validation
                 echo "📋 Apex domain detected - using DNS TXT validation"
-                az staticwebapp hostname set --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --hostname $FULL_DOMAIN --validation-method dns-txt-token
+                az staticwebapp hostname set --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --hostname $FULL_DOMAIN --validation-method dns-txt-token --no-wait
               fi
               
               if [ $? -eq 0 ]; then
-                echo "✅ Custom domain configured successfully"
-                echo "📋 Please update your DNS configuration:"
+                echo "✅ Custom domain configuration initiated successfully"
+                echo "📋 DNS configuration required:"
                 DEFAULT_HOSTNAME=$(az staticwebapp show --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --query "defaultHostname" --output tsv)
                 
                 if [[ "$FULL_DOMAIN" == *.*.* ]]; then
                   echo "    CNAME Record: $FULL_DOMAIN -> $DEFAULT_HOSTNAME"
                 else
                   echo "    For apex domain $FULL_DOMAIN:"
-                  echo "    1. Add A record: @ -> $(dig +short $DEFAULT_HOSTNAME | head -1)"
-                  echo "    2. Add TXT record for domain validation (check Azure Portal for exact value)"
+                  echo "    1. Get TXT validation token: az staticwebapp hostname show -n $STATIC_WEB_APP -g $RESOURCE_GROUP --hostname $FULL_DOMAIN --query 'validationToken'"
+                  echo "    2. Add TXT record: @ -> [validation-token-from-step-1]"
+                  echo "    3. Add A record: @ -> $(dig +short $DEFAULT_HOSTNAME | head -1 2>/dev/null || echo '[IP-from-Azure-Portal]')"
                 fi
+                echo "⏰ Domain validation will complete automatically once DNS records are configured"
               else
                 echo "⚠️ Custom domain configuration failed"
                 echo "💡 You can configure this manually in Azure Portal later"
@@ -463,6 +465,89 @@ jobs:
             else
               echo "✅ Custom domain already exists: $FULL_DOMAIN"
             fi
+          fi
+
+      - name: Get DNS Configuration Details
+        if: steps.config_validation.outputs.custom_domain_enabled == 'true'
+        id: dns_config
+        run: |
+          echo "📋 Retrieving DNS configuration details..."
+          
+          RESOURCE_GROUP="${{ steps.check_resources.outputs.resource_group }}"
+          STATIC_WEB_APP="${{ steps.config_validation.outputs.static_web_app }}"
+          FULL_DOMAIN="${{ steps.config_validation.outputs.full_domain }}"
+          
+          # Verify Static Web App exists
+          SWA_EXISTS=$(az staticwebapp list --resource-group $RESOURCE_GROUP --query "[?name=='$STATIC_WEB_APP'].name" --output tsv)
+          
+          if [ -n "$SWA_EXISTS" ]; then
+            # Get the default hostname for A record
+            DEFAULT_HOSTNAME=$(az staticwebapp show --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --query "defaultHostname" --output tsv)
+            
+            # Try to get the validation token (may not be available immediately)
+            VALIDATION_TOKEN=$(az staticwebapp hostname show --name $STATIC_WEB_APP --resource-group $RESOURCE_GROUP --hostname $FULL_DOMAIN --query "validationToken" --output tsv 2>/dev/null || echo "")
+            
+            # Get IP address for A record
+            IP_ADDRESS=$(nslookup $DEFAULT_HOSTNAME | grep -A1 "Non-authoritative answer:" | grep "Address:" | tail -1 | awk '{print $2}' 2>/dev/null || echo "")
+            
+            echo "🌐 DNS Configuration Required for: $FULL_DOMAIN"
+            echo "=================================="
+            
+            if [[ "$FULL_DOMAIN" == *.*.* ]]; then
+              # Subdomain - CNAME record
+              echo "📝 DNS Record Type: CNAME (Subdomain)"
+              echo "Record Configuration:"
+              echo "  Type: CNAME"
+              echo "  Name: $(echo $FULL_DOMAIN | cut -d'.' -f1)"
+              echo "  Value: $DEFAULT_HOSTNAME"
+              echo "  TTL: 3600"
+            else
+              # Apex domain - TXT + A records
+              echo "📝 DNS Record Type: TXT + A (Apex Domain)"
+              echo "Record Configuration:"
+              echo ""
+              echo "1. TXT Record (Domain Validation):"
+              echo "   Type: TXT"
+              echo "   Name: @ (or leave blank)"
+              if [ -n "$VALIDATION_TOKEN" ] && [ "$VALIDATION_TOKEN" != "null" ]; then
+                echo "   Value: $VALIDATION_TOKEN"
+              else
+                echo "   Value: [Run: az staticwebapp hostname show -n $STATIC_WEB_APP -g $RESOURCE_GROUP --hostname $FULL_DOMAIN --query 'validationToken']"
+              fi
+              echo "   TTL: 3600"
+              echo ""
+              echo "2. A Record (Domain Routing):"
+              echo "   Type: A"
+              echo "   Name: @ (or leave blank)"
+              if [ -n "$IP_ADDRESS" ]; then
+                echo "   Value: $IP_ADDRESS"
+              else
+                echo "   Value: [Get IP from: nslookup $DEFAULT_HOSTNAME]"
+              fi
+              echo "   TTL: 3600"
+            fi
+            
+            echo ""
+            echo "⏰ Timeline:"
+            echo "  - DNS Propagation: 1-12 hours"
+            echo "  - Azure Validation: Automatic after DNS propagation"
+            echo "  - SSL Certificate: Automatic after validation"
+            
+            echo ""
+            echo "🔍 Verification Commands:"
+            if [[ "$FULL_DOMAIN" == *.*.* ]]; then
+              echo "  nslookup $FULL_DOMAIN"
+            else
+              echo "  nslookup -type=TXT $FULL_DOMAIN"
+              echo "  nslookup $FULL_DOMAIN"
+            fi
+            
+            # Set outputs for the final summary
+            echo "default_hostname=$DEFAULT_HOSTNAME" >> $GITHUB_OUTPUT
+            echo "validation_token=$VALIDATION_TOKEN" >> $GITHUB_OUTPUT
+            echo "ip_address=$IP_ADDRESS" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ Static Web App not found - DNS configuration will be available after deployment"
           fi
 
       - name: Skip Custom Domain Configuration
@@ -494,6 +579,19 @@ jobs:
           echo "   https://calm-island-03caddd00.1.azurestaticapps.net"
           if [ "${{ steps.config_validation.outputs.custom_domain_enabled }}" = "true" ]; then
             echo "   Custom Domain: ${{ steps.config_validation.outputs.full_domain }} (after DNS configuration)"
+            echo ""
+            echo "📋 DNS Configuration Required:"
+            FULL_DOMAIN="${{ steps.config_validation.outputs.full_domain }}"
+            if [[ "$FULL_DOMAIN" == *.*.* ]]; then
+              echo "   Record Type: CNAME"
+              echo "   Host: $(echo $FULL_DOMAIN | cut -d'.' -f1)"
+              echo "   Target: ${{ steps.dns_config.outputs.default_hostname || 'mango-sky-0e8ef2000.2.azurestaticapps.net' }}"
+            else
+              echo "   Record Type: TXT + A (Apex Domain)"
+              echo "   TXT Record: @ -> ${{ steps.dns_config.outputs.validation_token || '[Get token from Azure Portal]' }}"
+              echo "   A Record: @ -> ${{ steps.dns_config.outputs.ip_address || '[Get IP from nslookup]' }}"
+            fi
+            echo "   💡 Complete DNS setup within 12 hours for domain activation"
           fi
 
   # Close pull request job
