@@ -16,6 +16,7 @@ Welcome to the comprehensive documentation for the Jyothi Prakash Resume Website
 ### 📖 **Workflow & Pipeline Guides**
 | Guide | Purpose | Target Audience |
 |-------|---------|-----------------|
+| [🧠 Workflow Logic Reference](WORKFLOW-LOGIC-REFERENCE.md) | **Complete change detection & deployment logic** | **All users, understanding workflow decisions** |
 | [🔄 Clean Execution Flowchart](CLEAN-EXECUTION-FLOWCHART.md) | Complete GitHub Actions workflow visualization | All users, understanding pipeline |
 | [📊 Complete Execution Flow](COMPLETE-EXECUTION-FLOW.md) | Detailed pipeline documentation | Advanced users, troubleshooting |
 | [🚀 PR Workflow Guide](PR-WORKFLOW-GUIDE.md) | Professional Pull Request workflow | Teams, code quality management |
