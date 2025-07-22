@@ -2,6 +2,8 @@
 
 Welcome to the comprehensive documentation for the Jyothi Prakash Resume Website deployment system. This documentation provides everything you need to successfully configure, validate, and deploy your Azure Static Web App with GitHub Actions automation.
 
+🧪 **Testing documentation-only change detection** - This change should not trigger any deployment!
+
 ## 📋 Documentation Overview
 
 ### 🚀 **Quick Start Documentation**

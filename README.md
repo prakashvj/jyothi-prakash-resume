@@ -8,6 +8,8 @@ Professional resume website for **Jyothi Prakash Ventrapragada**, Senior Site Re
 
 ## 🚀 Quick Start (5 minutes)
 
+🎯 **Perfect for testing our documentation-only change detection!** This update should skip deployment entirely.
+
 ### 1. Fork and Clone
 ```bash
 # Fork this repository on GitHub first, then clone your fork
