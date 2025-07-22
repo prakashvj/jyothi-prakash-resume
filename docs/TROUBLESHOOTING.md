@@ -1,765 +1,631 @@
 # 🔧 Troubleshooting Guide
 
 ## 🎯 **What This Guide Does**
-Provides **comprehensive problem resolution** for all common issues with Azure Static Web Apps deployment, configuration management, and script execution. Essential for quickly diagnosing and fixing problems during setup and deployment.
+Provides **comprehensive problem resolution** for all common issues with GitHub Actions CI/CD deployment, Azure authentication, and Static Web Apps hosting. Essential for quickly diagnosing and fixing problems during setup and deployment.
 
 ## 🔧 **How It Does It**
 - **Quick issue resolution table** for immediate problem identification
 - **Step-by-step diagnostic procedures** with validation commands
+- **GitHub Actions specific troubleshooting** with workflow debugging
 - **Common error patterns** with specific solutions and explanations
 - **Preventive maintenance tips** to avoid problems before they occur
-- **Emergency recovery procedures** for critical deployment failures
 
 ## 📚 **Related Documentation**
 - **[📖 Documentation Hub](README.md)** - Overview of all documentation
 - **[🚀 Quick Start](QUICK-START.md)** - Basic setup to avoid common issues
 - **[⚙️ Configuration System](CONFIGURATION-SYSTEM.md)** - Configuration-specific troubleshooting
-- **[📜 Scripts Reference](SCRIPTS-REFERENCE.md)** - Script-specific error resolution
+- **[🔄 Clean Execution Flowchart](CLEAN-EXECUTION-FLOWCHART.md)** - Understanding the GitHub Actions workflow
 
 ---
 
-Comprehensive troubleshooting guide for common issues with the Azure Static Web Apps deployment system.
+Comprehensive troubleshooting guide for common issues with the GitHub Actions CI/CD deployment system.
 
 ## 🚨 Quick Issue Resolution
 
-| Issue Type | Quick Fix | Script to Run |
-|------------|-----------|---------------|
-| Authentication | `az login && azd auth login` | `validate-essentials.ps1 -Quick` |
-| Configuration | Check `.env` file | `config-loader.ps1 -ValidateOnly` |
-| Deployment | Retry with force | `quick-deploy.ps1 -Force` |
-| Validation | Skip problematic checks | `deploy-one-command.ps1 -SkipValidation` |
-| Network | Check connectivity | `validate-deployment.ps1 -SkipSSL` |
+| Issue Type | Quick Fix | Where to Check |
+|------------|-----------|----------------|
+| Authentication | Check GitHub Secrets | Repository Settings > Secrets |
+| Configuration | Validate `environments.json` | GitHub Actions logs |
+| Deployment | Re-run workflow | GitHub Actions tab |
+| Network | Check Azure Status | Azure Portal |
+| Build | Check file syntax | GitHub Actions logs |
 
 ## 🔐 Authentication Issues
 
-### Issue: "Not authenticated to Azure"
+### Issue: "Azure authentication failed"
 
 **Symptoms:**
 ```
-❌ Error: Please run 'az login' to authenticate
+❌ Error: OIDC authentication failed
 ❌ Azure CLI authentication failed
 ❌ No valid Azure subscription found
+❌ Login failed for tenant
 ```
 
 **Solutions:**
 
-#### 1. Basic Authentication
-```powershell
-# Login to Azure CLI
-az login
+#### 1. OIDC Authentication (Recommended)
+**Check GitHub Secrets:**
+1. Go to your repository
+2. Navigate to **Settings > Secrets and variables > Actions**
+3. Verify these secrets exist:
+   - `AZURE_CLIENT_ID`
+   - `AZURE_TENANT_ID` 
+   - `AZURE_SUBSCRIPTION_ID`
 
-# Verify authentication
-az account show
-
-# Login to Azure Developer CLI
-azd auth login
-
-# Verify AZD authentication
-azd auth status
-```
-
-#### 2. Service Principal Authentication
-```powershell
-# For CI/CD scenarios
-az login --service-principal \
-  --username $env:AZURE_CLIENT_ID \
-  --password $env:AZURE_CLIENT_SECRET \
-  --tenant $env:AZURE_TENANT_ID
-```
-
-#### 3. Clear Authentication Cache
-```powershell
-# Clear Azure CLI cache
-az account clear
-
-# Clear AZD cache
-azd auth logout
-
-# Re-authenticate
-az login
-azd auth login
-```
-
-**Validation:**
-```powershell
-# Test authentication
-.\scripts\validate-essentials.ps1 -Environment "prod" -Quick
-```
-
----
-
-### Issue: "Subscription not found"
-
-**Symptoms:**
-```
-❌ Error: Subscription 'xxx' was not found
-❌ The provided subscription ID is invalid
-❌ No subscription found matching the criteria
-```
-
-**Solutions:**
-
-#### 1. List Available Subscriptions
-```powershell
-# List all subscriptions
-az account list --output table
-
-# Set correct subscription
-az account set --subscription "your-subscription-id"
-```
-
-#### 2. Update Configuration
-```ini
-# Update config/.env file
-AZURE_SUBSCRIPTION_ID=correct-subscription-id-here
-AZURE_TENANT_ID=correct-tenant-id-here
-```
-
-#### 3. Verify Subscription Access
-```powershell
-# Check subscription details
-az account show --subscription "your-subscription-id"
-
-# List resource groups in subscription
-az group list --subscription "your-subscription-id"
-```
-
----
-
-## ⚙️ Configuration Issues
-
-### Issue: "Configuration file not found"
-
-**Symptoms:**
-```
-❌ Error: Cannot find configuration file 'config/environments.json'
-❌ Error: Environment 'prod' not found in configuration
-❌ Configuration validation failed
-```
-
-**Solutions:**
-
-#### 1. Check File Existence
-```powershell
-# Verify files exist
-Test-Path "config/environments.json"
-Test-Path "config/.env"
-
-# List config directory
-Get-ChildItem "config/" -Force
-```
-
-#### 2. Create Missing Files
-```powershell
-# Create .env from template
-Copy-Item "config/.env.template" "config/.env"
-
-# Edit .env file with your values
-notepad "config/.env"
-```
-
-#### 3. Validate JSON Syntax
-```powershell
-# Test JSON syntax
-try {
-    Get-Content "config/environments.json" | ConvertFrom-Json
-    Write-Host "✅ JSON syntax is valid"
-} catch {
-    Write-Host "❌ JSON syntax error: $($_.Exception.Message)"
-}
-```
-
-**Fix Configuration:**
-```powershell
-# Test configuration loading
-.\scripts\config-loader.ps1 -Environment "prod" -ValidateOnly
-```
-
----
-
-### Issue: "Environment not found"
-
-**Symptoms:**
-```
-❌ Error: Environment 'staging' not found in environments.json
-❌ Configuration for environment 'dev' is missing
-```
-
-**Solutions:**
-
-#### 1. Check Available Environments
-```powershell
-# List configured environments
-$config = Get-Content "config/environments.json" | ConvertFrom-Json
-$config.environments | Get-Member -MemberType NoteProperty | Select-Object Name
-```
-
-#### 2. Add Missing Environment
+**Validate configuration:**
 ```json
+// In config/environments.json
 {
   "environments": {
-    "prod": { /* existing config */ },
-    "staging": {
+    "prod": {
       "azure": {
-        "resourceGroup": "jyothi-resume-staging-RG",
-        "staticWebAppName": "jyothi-resume-staging",
-        "location": "eastasia"
+        "auth": {
+          "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+          "tenantId": "${{ secrets.AZURE_TENANT_ID }}",
+          "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+        }
       }
     }
   }
 }
 ```
 
-#### 3. Use Correct Environment Name
-```powershell
-# Use existing environment
-.\scripts\deploy-one-command.ps1 -Environment "prod"  # Not "production"
+#### 2. Interactive Authentication (Fallback)
+If OIDC fails, GitHub Actions will fall back to interactive authentication:
+1. Check GitHub Actions logs for authentication prompts
+2. Ensure Azure subscription is active
+3. Verify user has proper permissions
+
+**Debug steps:**
+```yaml
+# Add this to your workflow for debugging
+- name: Debug Authentication
+  run: |
+    echo "Checking Azure CLI version..."
+    az --version
+    echo "Checking current account..."
+    az account show --output table
 ```
 
----
-
-## 🌐 Deployment Issues
-
-### Issue: "Static Web App deployment failed"
+### Issue: "Permission denied errors"
 
 **Symptoms:**
 ```
-❌ Error: Deployment to Static Web App failed
-❌ HTTP 401: Unauthorized deployment
-❌ Build process failed during deployment
+❌ Error: Insufficient privileges to complete the operation
+❌ AuthorizationFailed: Principal does not have permission
+❌ Forbidden: You don't have permission to access this resource
 ```
 
 **Solutions:**
 
-#### 1. Check Deployment Token
-```powershell
-# Get new deployment token
-az staticwebapp secrets list \
-  --name "jyothi-resume-WebApp" \
-  --resource-group "jyothi-resume-RG"
-```
+#### 1. Check Azure Permissions
+Ensure your account has these roles:
+- **Contributor** or **Owner** on the subscription
+- **Static Web Apps Contributor** for hosting resources
+- **Resource Group Contributor** for resource management
 
-#### 2. Verify Resource Exists
-```powershell
-# Check if Static Web App exists
-az staticwebapp show \
-  --name "jyothi-resume-WebApp" \
-  --resource-group "jyothi-resume-RG"
+#### 2. Verify GitHub OIDC Setup
+If using OIDC, ensure your Azure AD application has:
+- Proper role assignments
+- Correct federated credentials
+- Valid service principal permissions
 
-# List all Static Web Apps
-az staticwebapp list --output table
-```
+## ⚙️ Configuration Issues
 
-#### 3. Check Source Files
-```powershell
-# Verify source directory exists
-Test-Path "src/"
-
-# Check required files
-Test-Path "src/index.html"
-Test-Path "src/css/style.css"
-```
-
-#### 4. Manual Deployment
-```powershell
-# Force deployment with verbose output
-.\scripts\quick-deploy.ps1 -Environment "prod" -Force -Verbose
-```
-
-**Deploy with AZD:**
-```powershell
-# Alternative deployment method
-azd deploy --environment prod
-```
-
----
-
-### Issue: "Resource group does not exist"
+### Issue: "Configuration file not found or invalid"
 
 **Symptoms:**
 ```
-❌ Error: Resource group 'jyothi-resume-RG' was not found
-❌ The specified resource group does not exist
+❌ Error: Cannot find config/environments.json
+❌ Invalid JSON format in configuration
+❌ Missing required configuration properties
 ```
 
 **Solutions:**
 
-#### 1. Create Resource Group
-```powershell
-# Create resource group
-az group create \
-  --name "jyothi-resume-RG" \
-  --location "eastasia"
+#### 1. Validate JSON Syntax
+```bash
+# Check JSON syntax locally
+python -m json.tool config/environments.json
+
+# Or using PowerShell
+Get-Content config/environments.json | ConvertFrom-Json
 ```
 
-#### 2. Check Resource Group Name
-```powershell
-# List existing resource groups
-az group list --output table
-
-# Update configuration if needed
-# Edit config/environments.json or config/.env
+#### 2. Check Required Properties
+Minimum required configuration:
+```json
+{
+  "environments": {
+    "prod": {
+      "azure": {
+        "resourceGroup": "your-resource-group",
+        "staticWebAppName": "your-app-name",
+        "location": "eastus2"
+      }
+    }
+  }
+}
 ```
 
-#### 3. Run Preparation Script
-```powershell
-# Create missing resources
-.\scripts\prepare-deployment.ps1 -Environment "prod" -InstallMissing
+#### 3. Fix Common Configuration Errors
+```json
+// ❌ Wrong: Missing quotes
+{
+  environments: {
+    prod: {
+      azure: {
+        resourceGroup: my-resource-group
+      }
+    }
+  }
+}
+
+// ✅ Correct: Proper JSON format
+{
+  "environments": {
+    "prod": {
+      "azure": {
+        "resourceGroup": "my-resource-group"
+      }
+    }
+  }
+}
 ```
 
----
-
-## 🔗 Network & Connectivity Issues
-
-### Issue: "Website not accessible"
+### Issue: "Environment not found"
 
 **Symptoms:**
 ```
-❌ HTTP 404: Not Found
-❌ DNS_PROBE_FINISHED_NXDOMAIN
-❌ Site cannot be reached
+❌ Error: Environment 'prod' not found in configuration
+❌ Cannot load environment settings
+❌ Invalid environment specified
+```
+
+**Solutions:**
+
+#### 1. Check Environment Names
+Ensure environment name matches exactly:
+```bash
+# Current branch triggers environment detection
+# main branch = prod environment
+# staging branch = staging environment
+# other branches = dev environment
+```
+
+#### 2. Add Missing Environment
+```json
+{
+  "environments": {
+    "prod": { /* production config */ },
+    "staging": { /* staging config */ },
+    "dev": { /* development config */ }
+  }
+}
+```
+
+## 🚀 GitHub Actions Deployment Issues
+
+### Issue: "Workflow fails to start"
+
+**Symptoms:**
+```
+❌ Workflow not triggered on push
+❌ Actions tab shows no workflows
+❌ Workflow file not recognized
+```
+
+**Solutions:**
+
+#### 1. Check Workflow File Location
+Ensure the file is at:
+```
+.github/workflows/full-infrastructure-deploy.yml
+```
+
+#### 2. Validate YAML Syntax
+```yaml
+# Check for proper indentation and syntax
+name: Full Infrastructure Deploy
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+```
+
+#### 3. Check Permissions
+Ensure repository has Actions enabled:
+1. Go to repository **Settings**
+2. Navigate to **Actions > General**
+3. Select **Allow all actions and reusable workflows**
+
+### Issue: "Deployment step fails"
+
+**Symptoms:**
+```
+❌ Error: Resource group deployment failed
+❌ Static Web App creation failed  
+❌ Resource already exists with different configuration
+```
+
+**Solutions:**
+
+#### 1. Resource Conflicts
+```bash
+# Check if resources already exist with different config
+az group show --name your-resource-group
+az staticwebapp show --name your-app-name --resource-group your-resource-group
+```
+
+#### 2. Force Recreate Resources
+Add this to your workflow:
+```yaml
+- name: Deploy with Force Update
+  run: |
+    az deployment group create \
+      --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+      --template-file infra/main.bicep \
+      --mode Complete \
+      --parameters @infra/main.parameters.json
+```
+
+#### 3. Clean Failed Deployments
+```yaml
+- name: Clean Failed Deployment
+  run: |
+    az deployment group list \
+      --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+      --query "[?properties.provisioningState=='Failed'].name" \
+      --output tsv | \
+    xargs -I {} az deployment group delete \
+      --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+      --name {}
+```
+
+### Issue: "Content deployment fails"
+
+**Symptoms:**
+```
+❌ Error: Failed to upload website content
+❌ SWA deployment failed
+❌ Content validation failed
+```
+
+**Solutions:**
+
+#### 1. Check Source Directory
+Ensure your content is in the correct location:
+```yaml
+- name: Deploy Static Web App
+  uses: Azure/static-web-apps-deploy@v1
+  with:
+    app_location: "src"  # Your content directory
+    output_location: ""   # Build output (if any)
+```
+
+#### 2. Validate Content Structure
+```
+src/
+├── index.html  # Required main file
+├── css/
+│   └── style.css
+└── js/
+    └── main.js
+```
+
+#### 3. Check File Permissions
+```yaml
+- name: Fix File Permissions
+  run: |
+    find src -type f -exec chmod 644 {} \;
+    find src -type d -exec chmod 755 {} \;
+```
+
+## 🌐 Azure Static Web Apps Issues
+
+### Issue: "Website not loading"
+
+**Symptoms:**
+```
+❌ 404 Not Found
+❌ SSL certificate errors
+❌ DNS resolution failures
+❌ Slow loading times
 ```
 
 **Solutions:**
 
 #### 1. Check Deployment Status
-```powershell
-# Verify deployment completed
+```bash
+# Check deployment status in Azure Portal
 az staticwebapp show \
-  --name "jyothi-resume-WebApp" \
-  --resource-group "jyothi-resume-RG" \
-  --query "defaultHostname"
+  --name your-app-name \
+  --resource-group your-resource-group \
+  --query "repositoryUrl,defaultHostname,customDomains"
 ```
 
-#### 2. Test Direct URL
-```powershell
-# Test the Azure-provided URL
-$url = "https://jyothi-resume-WebApp.azurestaticapps.net"
-try {
-    $response = Invoke-WebRequest -Uri $url -Method Head
-    Write-Host "✅ Website accessible: $($response.StatusCode)"
-} catch {
-    Write-Host "❌ Website not accessible: $($_.Exception.Message)"
-}
+#### 2. Verify DNS Propagation
+```bash
+# Check DNS resolution
+nslookup your-app-name.1.azurestaticapps.net
+dig your-app-name.1.azurestaticapps.net
 ```
 
-#### 3. Check DNS Resolution
-```powershell
-# Test DNS resolution
-nslookup jyothi-resume-WebApp.azurestaticapps.net
-
-# Test with different DNS server
-nslookup jyothi-resume-WebApp.azurestaticapps.net 8.8.8.8
+#### 3. SSL Certificate Issues
+```yaml
+- name: Check SSL Certificate
+  run: |
+    curl -I https://your-app-name.1.azurestaticapps.net
+    openssl s_client -connect your-app-name.1.azurestaticapps.net:443 -servername your-app-name.1.azurestaticapps.net
 ```
 
-#### 4. Validate Content
-```powershell
-# Run comprehensive validation
-.\scripts\validate-deployment.ps1 -Environment "prod" -IncludePerformance
-```
-
----
-
-### Issue: "SSL certificate invalid"
+### Issue: "Custom domain not working"
 
 **Symptoms:**
 ```
-❌ SSL certificate verification failed
-❌ NET::ERR_CERT_AUTHORITY_INVALID
-❌ Your connection is not private
+❌ Custom domain shows as "Validating"
+❌ DNS configuration errors
+❌ SSL certificate provisioning failed
 ```
 
 **Solutions:**
 
-#### 1. Check Certificate Status
-```powershell
-# Check SSL certificate
-openssl s_client -connect jyothi-resume-WebApp.azurestaticapps.net:443 -servername jyothi-resume-WebApp.azurestaticapps.net
+#### 1. Check DNS Configuration
+```bash
+# For CNAME record
+dig CNAME your-domain.com
 
-# Or use PowerShell
-$cert = [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+# For A record  
+dig A your-domain.com
 ```
 
-#### 2. Wait for Certificate Provisioning
-```powershell
-# Azure may take time to provision certificates
-# Wait 5-10 minutes after deployment
-
-# Check again
-.\scripts\validate-deployment.ps1 -Environment "prod"
-```
-
-#### 3. Skip SSL Validation (Temporary)
-```powershell
-# For testing only
-.\scripts\validate-deployment.ps1 -Environment "prod" -SkipSSL
-```
-
----
-
-## 📦 Build & Content Issues
-
-### Issue: "Build process failed"
-
-**Symptoms:**
-```
-❌ Error: Build command failed
-❌ npm install failed
-❌ Missing build dependencies
-```
-
-**Solutions:**
-
-#### 1. Check Build Requirements
-```powershell
-# Verify Node.js if needed
-node --version
-npm --version
-
-# Install dependencies
-npm install
-```
-
-#### 2. Manual Build
-```powershell
-# Test build locally
-cd src/
-# Run any build commands manually
-
-# Deploy pre-built content
-.\scripts\quick-deploy.ps1 -Environment "prod" -SkipBuild
-```
-
-#### 3. Check Source Files
-```powershell
-# Verify all required files exist
-Test-Path "src/index.html"
-Test-Path "src/css/*.css"
-Test-Path "src/js/*.js"
-
-# Check file permissions
-Get-ChildItem "src/" -Recurse | Select-Object Name, Mode
-```
-
----
-
-### Issue: "Content not updating"
-
-**Symptoms:**
-```
-❌ Website shows old content after deployment
-❌ CSS/JS changes not reflected
-❌ Cache issues
-```
-
-**Solutions:**
-
-#### 1. Clear Browser Cache
-```
-Ctrl + F5 (Hard refresh)
-Ctrl + Shift + R (Chrome/Firefox)
-Open Incognito/Private window
-```
-
-#### 2. Force Deployment
-```powershell
-# Force content update
-.\scripts\quick-deploy.ps1 -Environment "prod" -Force
-```
-
-#### 3. Check Deployment Status
-```powershell
-# Verify deployment completed
-az staticwebapp deployment list \
-  --name "jyothi-resume-WebApp" \
-  --resource-group "jyothi-resume-RG"
-```
-
-#### 4. Add Cache-Busting
-```html
-<!-- Add version parameter to CSS/JS files -->
-<link rel="stylesheet" href="css/style.css?v=20241201">
-<script src="js/main.js?v=20241201"></script>
-```
-
----
-
-## 🔧 PowerShell Script Issues
-
-### Issue: "Execution Policy Restricted"
-
-**Symptoms:**
-```
-❌ cannot be loaded because running scripts is disabled on this system
-❌ Execution Policy: Restricted
-```
-
-**Solutions:**
-
-#### 1. Check Current Policy
-```powershell
-Get-ExecutionPolicy -Scope CurrentUser
-```
-
-#### 2. Set Execution Policy
-```powershell
-# For current user only (recommended)
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-
-# Or bypass for single command
-PowerShell -ExecutionPolicy Bypass -File "scripts\deploy-one-command.ps1"
-```
-
-#### 3. Unblock Scripts
-```powershell
-# Unblock downloaded scripts
-Get-ChildItem "scripts\*.ps1" | Unblock-File
-```
-
----
-
-### Issue: "Module not found"
-
-**Symptoms:**
-```
-❌ Module 'ConfigModule' could not be loaded
-❌ The specified module was not loaded
-```
-
-**Solutions:**
-
-#### 1. Import Module Manually
-```powershell
-# Import the configuration module
-Import-Module ".\scripts\ConfigModule.psm1" -Force
-
-# Verify module loaded
-Get-Module ConfigModule
-```
-
-#### 2. Check Module Path
-```powershell
-# Verify module file exists
-Test-Path "scripts\ConfigModule.psm1"
-
-# Check module syntax
-Import-Module ".\scripts\ConfigModule.psm1" -Force -Verbose
-```
-
-#### 3. Reinstall Module
-```powershell
-# Remove and re-import
-Remove-Module ConfigModule -ErrorAction SilentlyContinue
-Import-Module ".\scripts\ConfigModule.psm1" -Force
-```
-
----
-
-## 🔍 Diagnostic Commands
-
-### System Diagnostics
-
-```powershell
-# Check PowerShell version
-$PSVersionTable
-
-# Check Azure CLI version
-az --version
-
-# Check AZD version
-azd version
-
-# Check authentication status
-az account show
-azd auth status
-
-# Test network connectivity
-Test-NetConnection -ComputerName "management.azure.com" -Port 443
-```
-
-### Configuration Diagnostics
-
-```powershell
-# Test configuration loading
-.\scripts\config-loader.ps1 -Environment "prod" -ShowAll
-
-# Validate all environments
-$environments = @("prod", "staging", "dev")
-foreach ($env in $environments) {
-    Write-Host "Testing environment: $env"
-    try {
-        .\scripts\config-loader.ps1 -Environment $env -ValidateOnly
-        Write-Host "✅ $env: Valid"
-    } catch {
-        Write-Host "❌ $env: $($_.Exception.Message)"
+#### 2. Validate Domain Configuration
+```json
+{
+  "features": {
+    "customDomain": {
+      "enabled": true,
+      "domain": "your-domain.com",
+      "validation": {
+        "method": "dns-txt-token"
+      }
     }
+  }
 }
 ```
 
-### Deployment Diagnostics
+## 🐛 Common Error Patterns
 
-```powershell
-# Check Azure resources
-az group list --output table
-az staticwebapp list --output table
+### GitHub Actions Specific Errors
 
-# Test deployment prerequisites
-.\scripts\prepare-deployment.ps1 -Environment "prod"
-
-# Run comprehensive validation
-.\scripts\validate-essentials.ps1 -Environment "prod" -Detailed
+#### Error: "Resource group not found"
+```yaml
+❌ Error: Resource group 'my-rg' could not be found
+```
+**Solution:**
+```yaml
+- name: Create Resource Group
+  run: |
+    az group create \
+      --name ${{ env.AZURE_RESOURCE_GROUP }} \
+      --location ${{ env.AZURE_LOCATION }}
 ```
 
----
+#### Error: "Static Web App name already taken"
+```yaml
+❌ Error: The name 'myapp' is already taken
+```
+**Solution:**
+Add unique suffix to your app name:
+```json
+{
+  "azure": {
+    "staticWebAppName": "myapp-${GITHUB_RUN_NUMBER}",
+    "resourceGroup": "myapp-rg"
+  }
+}
+```
 
-## 📊 Performance Issues
+#### Error: "Bicep template deployment failed"
+```yaml
+❌ Error: Template deployment failed with multiple errors
+```
+**Solution:**
+```yaml
+- name: Debug Bicep Template
+  run: |
+    az deployment group validate \
+      --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+      --template-file infra/main.bicep \
+      --parameters @infra/main.parameters.json
+```
 
-### Issue: "Slow deployment"
+### Configuration Validation Errors
+
+#### Error: "Invalid JSON in environments.json"
+**Diagnostic:**
+```bash
+python -m json.tool config/environments.json
+```
+
+#### Error: "Missing required environment properties"
+**Check required properties:**
+```json
+{
+  "environments": {
+    "prod": {
+      "azure": {
+        "resourceGroup": "required",
+        "staticWebAppName": "required", 
+        "location": "required"
+      }
+    }
+  }
+}
+```
+
+## 🔧 Debug Mode & Logging
+
+### Enable Debug Mode in GitHub Actions
+```yaml
+- name: Enable Debug Logging
+  run: |
+    echo "ACTIONS_STEP_DEBUG=true" >> $GITHUB_ENV
+    echo "ACTIONS_RUNNER_DEBUG=true" >> $GITHUB_ENV
+```
+
+### View Detailed Logs
+```yaml
+- name: Debug Azure CLI
+  run: |
+    az --version
+    az account show --output table
+    az group list --output table
+    az staticwebapp list --output table
+```
+
+### Monitor Deployment Progress
+```yaml
+- name: Monitor Deployment
+  run: |
+    deployment_name=$(az deployment group list \
+      --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+      --query "max_by([], &properties.timestamp).name" \
+      --output tsv)
+    
+    az deployment group show \
+      --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+      --name $deployment_name \
+      --output table
+```
+
+## 📊 Performance Troubleshooting
+
+### Issue: "Slow deployment times"
 
 **Symptoms:**
 ```
-⏱️ Deployment taking > 10 minutes
-⏱️ Upload speed very slow
-⏱️ Timeout errors during deployment
+⚠️ Deployment taking longer than 15 minutes
+⚠️ GitHub Actions timeout
+⚠️ Resource provisioning delays
 ```
 
 **Solutions:**
 
-#### 1. Use Quick Deploy
-```powershell
-# For content-only changes
-.\scripts\quick-deploy.ps1 -Environment "prod"
+#### 1. Optimize Workflow
+```yaml
+- name: Skip Unnecessary Steps
+  if: github.event_name == 'pull_request'
+  run: echo "Skipping full deployment for PR"
+
+- name: Use Deployment Slots
+  run: |
+    # Deploy to staging slot first for PRs
+    az staticwebapp environment set \
+      --name ${{ env.STATIC_WEB_APP_NAME }} \
+      --environment-name "preview-${{ github.event.number }}"
 ```
 
-#### 2. Check Network Speed
-```powershell
-# Test upload speed to Azure
-# Use Azure Storage Explorer or similar tool
+#### 2. Parallel Execution
+```yaml
+strategy:
+  matrix:
+    environment: [staging, prod]
+    
+steps:
+- name: Deploy to ${{ matrix.environment }}
+  run: |
+    # Deploy environments in parallel
 ```
 
-#### 3. Optimize Content
-```powershell
-# Minify CSS/JS files
-# Compress images
-# Remove unnecessary files from src/
+### Issue: "Resource limits exceeded"
+
+**Symptoms:**
 ```
-
----
-
-### Issue: "Website loads slowly"
+❌ Error: Quota exceeded for Static Web Apps
+❌ Too many deployments in progress
+❌ Rate limiting errors
+```
 
 **Solutions:**
 
-#### 1. Enable CDN
-```powershell
-# Configure Azure CDN (if not already done)
-az cdn profile create \
-  --name "jyothi-resume-cdn" \
-  --resource-group "jyothi-resume-RG" \
-  --sku "Standard_Microsoft"
+#### 1. Check Azure Quotas
+```bash
+az staticwebapp list --output table
+az account list-locations --output table
 ```
 
-#### 2. Optimize Assets
-```html
-<!-- Optimize images -->
-<img src="image.webp" alt="Description" loading="lazy">
-
-<!-- Minify CSS/JS -->
-<link rel="stylesheet" href="css/style.min.css">
-<script src="js/main.min.js" async></script>
+#### 2. Implement Deployment Queuing
+```yaml
+- name: Wait for Previous Deployment
+  run: |
+    while [[ $(az deployment group list \
+      --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+      --query "length([?properties.provisioningState=='Running'])") -gt 0 ]]; do
+      echo "Waiting for previous deployment to complete..."
+      sleep 30
+    done
 ```
 
-#### 3. Check Performance
-```powershell
-# Run performance validation
-.\scripts\validate-deployment.ps1 -Environment "prod" -IncludePerformance
+## 🆘 Emergency Recovery
+
+### Complete Environment Reset
+```yaml
+- name: Emergency Reset
+  run: |
+    # Delete and recreate resource group
+    az group delete --name ${{ env.AZURE_RESOURCE_GROUP }} --yes --no-wait
+    sleep 60
+    az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location ${{ env.AZURE_LOCATION }}
+    
+    # Redeploy infrastructure
+    az deployment group create \
+      --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+      --template-file infra/main.bicep \
+      --parameters @infra/main.parameters.json
 ```
+
+### Rollback to Previous Version
+```yaml
+- name: Rollback Deployment
+  run: |
+    # Get previous successful deployment
+    previous_deployment=$(az deployment group list \
+      --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+      --query "reverse(sort_by([?properties.provisioningState=='Succeeded'], &properties.timestamp))[1].name" \
+      --output tsv)
+    
+    # Rollback to previous state
+    az deployment group create \
+      --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+      --name "rollback-$(date +%s)" \
+      --template-uri "$(az deployment group show \
+        --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+        --name $previous_deployment \
+        --query 'properties.templateLink.uri' \
+        --output tsv)"
+```
+
+## 📞 Getting Additional Help
+
+### Self-Diagnostic Checklist
+- [ ] Configuration file exists and is valid JSON
+- [ ] GitHub Secrets are properly configured
+- [ ] Azure subscription is active and accessible
+- [ ] Resource names are globally unique
+- [ ] GitHub Actions workflow file exists in correct location
+- [ ] Repository has Actions enabled
+
+### Contact Information
+If you've tried all troubleshooting steps:
+
+1. **Check GitHub Actions logs** for specific error messages
+2. **Review [Configuration System](CONFIGURATION-SYSTEM.md)** for setup validation
+3. **Study [Clean Execution Flowchart](CLEAN-EXECUTION-FLOWCHART.md)** to understand the workflow
+4. **Use GitHub Issues** on the repository for community support
 
 ---
 
-## 🆘 Emergency Procedures
-
-### Complete Reset
-
-If everything fails, perform a complete reset:
-
-```powershell
-# 1. Clear authentication
-az logout
-azd auth logout
-
-# 2. Re-authenticate
-az login
-azd auth login
-
-# 3. Validate configuration
-.\scripts\config-loader.ps1 -Environment "prod" -ValidateOnly
-
-# 4. Prepare deployment
-.\scripts\prepare-deployment.ps1 -Environment "prod" -InstallMissing
-
-# 5. Deploy with force
-.\scripts\deploy-one-command.ps1 -Environment "prod" -Force
-```
-
-### Rollback Deployment
-
-```powershell
-# List recent deployments
-az staticwebapp deployment list \
-  --name "jyothi-resume-WebApp" \
-  --resource-group "jyothi-resume-RG"
-
-# Rollback to previous version (if available)
-# Note: Azure Static Web Apps doesn't support direct rollback
-# You'll need to redeploy previous version from source control
-```
-
-### Contact Support
-
-If issues persist:
-
-1. **GitHub Issues:** Create issue with logs and error messages
-2. **Azure Support:** For Azure-specific issues
-3. **Community:** Stack Overflow with tags `azure-static-web-apps`, `powershell`
-
-**Include in support request:**
-- Error messages (full text)
-- Configuration files (anonymized)
-- Script output logs
-- Environment details (OS, PowerShell version, etc.)
-
----
-
-## 🔄 Prevention Tips
-
-### 1. Regular Maintenance
-```powershell
-# Weekly validation
-.\scripts\validate-essentials.ps1 -Environment "prod" -Detailed
-
-# Monthly authentication refresh
-az login
-azd auth login
-```
-
-### 2. Configuration Backup
-```powershell
-# Backup configuration
-Copy-Item "config/" "config-backup-$(Get-Date -Format 'yyyyMMdd')/" -Recurse
-```
-
-### 3. Monitor Deployments
-```powershell
-# Log all deployments
-.\scripts\deploy-one-command.ps1 -Environment "prod" | 
-  Tee-Object -FilePath "logs/deployment-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
-```
-
----
-
-**Need More Help?**
-- 📖 [Quick Start Guide](QUICK-START.md)
-- ⚙️ [Configuration System](CONFIGURATION-SYSTEM.md)
-- 📜 [Scripts Reference](SCRIPTS-REFERENCE.md)
-- 🚀 [Deployment Reference](DEPLOYMENT-REFERENCE.md)
+**💡 Pro Tip:** Always check the GitHub Actions logs first - they contain detailed error information and are the best starting point for troubleshooting any deployment issues.

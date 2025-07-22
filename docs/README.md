@@ -1,6 +1,6 @@
 # 📚 Documentation Hub
 
-Welcome to the comprehensive documentation for the Jyothi Prakash Resume Website deployment system. This documentation provides everything you need to successfully configure, validate, and deploy your Azure Static Web App with centralized configuration management.
+Welcome to the comprehensive documentation for the Jyothi Prakash Resume Website deployment system. This documentation provides everything you need to successfully configure, validate, and deploy your Azure Static Web App with GitHub Actions automation.
 
 ## 📋 Documentation Overview
 
@@ -11,12 +11,18 @@ Welcome to the comprehensive documentation for the Jyothi Prakash Resume Website
 | [⚙️ Configuration System](CONFIGURATION-SYSTEM.md) | Master the centralized config system | 15-20 minutes |
 | [🔧 Troubleshooting](TROUBLESHOOTING.md) | Solve common issues quickly | As needed |
 
-### 📖 **Comprehensive Guides**
+### 📖 **Workflow & Pipeline Guides**
 | Guide | Purpose | Target Audience |
 |-------|---------|-----------------|
-| [📜 Scripts Reference](SCRIPTS-REFERENCE.md) | Complete script documentation | Power users, automation |
-| [🚀 Deployment Reference](DEPLOYMENT-REFERENCE.md) | Advanced deployment strategies | DevOps, production deployments |
-| [🔄 PR Workflow Guide](PR-WORKFLOW-GUIDE.md) | Professional Pull Request workflow | Teams, code quality management |
+| [🔄 Clean Execution Flowchart](CLEAN-EXECUTION-FLOWCHART.md) | Complete GitHub Actions workflow visualization | All users, understanding pipeline |
+| [📊 Complete Execution Flow](COMPLETE-EXECUTION-FLOW.md) | Detailed pipeline documentation | Advanced users, troubleshooting |
+| [🚀 PR Workflow Guide](PR-WORKFLOW-GUIDE.md) | Professional Pull Request workflow | Teams, code quality management |
+
+### 🏗️ **Advanced Guides**
+| Guide | Purpose | Target Audience |
+|-------|---------|-----------------|
+| [🌐 Custom Domain Setup](CUSTOM-DOMAIN-SETUP.md) | Configure custom domains | Production deployments |
+| [🔧 Troubleshooting](TROUBLESHOOTING.md) | Advanced problem resolution | DevOps, production issues |
 
 ---
 
@@ -28,342 +34,192 @@ Welcome to the comprehensive documentation for the Jyothi Prakash Resume Website
 Perfect for:
 - ✅ First-time setup
 - ✅ Getting your website live quickly
-- ✅ Understanding the basic workflow
+- ✅ Understanding GitHub Actions deployment
+- ✅ Basic configuration
 
-**What you'll learn:**
-- How to configure your environment in 2 minutes
-- Single command to deploy everything
-- Basic validation and troubleshooting
+**What you'll accomplish:**
+- 🚀 Deploy your resume website to Azure
+- ⚙️ Configure GitHub Actions automation
+- 🌐 Get a live URL for your website
+- 🔧 Understand the basic workflow
 
 ---
 
-### ⚙️ **Want to Understand the Configuration System?**
-**👉 Go Here:** [⚙️ Configuration System Guide](CONFIGURATION-SYSTEM.md)
+### ⚙️ **Need Configuration Help?**
+**👉 Go to:** [⚙️ Configuration System Guide](CONFIGURATION-SYSTEM.md)
 
 Perfect for:
-- ✅ Managing multiple environments (prod, staging, dev)
-- ✅ Understanding how settings work
-- ✅ Customizing the deployment system
+- ✅ Multi-environment setup (prod, staging, dev)
+- ✅ Azure authentication configuration  
+- ✅ GitHub Secrets management
+- ✅ Advanced deployment settings
+- ✅ Feature flag configuration
 
 **What you'll learn:**
-- How the centralized configuration works
-- Environment inheritance and overrides
-- Configuration validation and security
+- 🔐 OIDC vs Interactive authentication
+- 🌍 Multi-environment configuration
+- 🔧 Advanced deployment options
+- 📊 Configuration validation
+- 🎯 Best practices and security
 
 ---
 
-### 📜 **Need Script Details?**
-**👉 Check:** [📜 Scripts Reference Guide](SCRIPTS-REFERENCE.md)
+### 🔄 **Understanding the Workflow?**
+**👉 Check out:** [🔄 Clean Execution Flowchart](CLEAN-EXECUTION-FLOWCHART.md)
 
 Perfect for:
-- ✅ Understanding what each script does
-- ✅ Script parameters and options
-- ✅ Advanced automation scenarios
+- ✅ Understanding the GitHub Actions pipeline
+- ✅ Visualizing the deployment process
+- ✅ Troubleshooting deployment issues
+- ✅ Learning how automation works
 
-**What you'll learn:**
-- Complete parameter reference for all scripts
-- Usage patterns and examples
-- Performance optimization tips
-
----
-
-### 🚀 **Planning Production Deployment?**
-**👉 Read:** [🚀 Deployment Reference Guide](DEPLOYMENT-REFERENCE.md)
-
-Perfect for:
-- ✅ Production deployment strategies
-- ✅ Multi-environment workflows
-- ✅ Performance and security optimization
-
-**What you'll learn:**
-- Infrastructure as Code details
-- Deployment monitoring and logging
-- Security best practices
+**What you'll see:**
+- 📊 Complete workflow visualization
+- ⚡ Step-by-step execution flow
+- 🔧 Decision points and logic
+- 🎯 Performance optimization points
 
 ---
 
-### 🔧 **Having Issues?**
+### 🚨 **Having Issues?**
 **👉 Visit:** [🔧 Troubleshooting Guide](TROUBLESHOOTING.md)
 
 Perfect for:
-- ✅ Solving authentication problems
-- ✅ Configuration and deployment issues
+- ✅ Deployment failures
+- ✅ Authentication errors
+- ✅ Configuration issues
 - ✅ Performance problems
+- ✅ Azure resource issues
 
 **What you'll find:**
-- Common error solutions
-- Diagnostic commands
-- Step-by-step problem resolution
+- 🔍 Common error patterns
+- ✅ Step-by-step solutions
+- 🛠️ Debug techniques
+- 📊 Performance optimization
+- 🎯 Prevention strategies
 
 ---
 
-## 🏃‍♂️ Quick Commands Reference
+## 🏗️ Architecture Overview
 
-### Essential Commands
-```powershell
-# First-time deployment
-.\scripts\deploy-one-command.ps1 -Environment "prod"
+### **Deployment Method**
+- **Primary:** GitHub Actions CI/CD Pipeline
+- **Trigger:** Push to main branch
+- **Infrastructure:** Azure Bicep (Infrastructure as Code)
+- **Hosting:** Azure Static Web Apps (Free Tier)
 
-# Quick content updates
-.\scripts\quick-deploy.ps1 -Environment "prod"
+### **Configuration System**
+- **Central Config:** `config/environments.json`
+- **Authentication:** OIDC or Interactive Azure CLI
+- **Multi-Environment:** Production, Staging, Development
+- **Security:** GitHub Secrets integration
 
-# Validate everything
-.\scripts\validate-deployment.ps1 -Environment "prod"
-
-# Test configuration
-.\scripts\config-loader.ps1 -Environment "prod" -ValidateOnly
+### **Workflow Automation**
+```mermaid
+graph TD
+    A[Push to Main] --> B[GitHub Actions]
+    B --> C[Load Configuration]
+    C --> D[Azure Authentication]
+    D --> E[Resource Detection]
+    E --> F[Deploy Infrastructure]
+    F --> G[Deploy Content]
+    G --> H[Validation]
+    H --> I[Live Website]
 ```
 
-### Validation Commands
-```powershell
-# Quick validation
-.\scripts\validate-essentials.ps1 -Environment "prod" -Quick
+## 📊 Documentation Quick Reference
 
-# Detailed validation
-.\scripts\validate-essentials.ps1 -Environment "prod" -Detailed
+### **By Use Case**
+| I want to... | Read this guide | Time needed |
+|--------------|----------------|-------------|
+| Get started quickly | [Quick Start](QUICK-START.md) | 5 minutes |
+| Understand the pipeline | [Clean Execution Flowchart](CLEAN-EXECUTION-FLOWCHART.md) | 10 minutes |
+| Set up multiple environments | [Configuration System](CONFIGURATION-SYSTEM.md) | 20 minutes |
+| Configure custom domain | [Custom Domain Setup](CUSTOM-DOMAIN-SETUP.md) | 15 minutes |
+| Troubleshoot issues | [Troubleshooting](TROUBLESHOOTING.md) | As needed |
+| Understand PR workflow | [PR Workflow Guide](PR-WORKFLOW-GUIDE.md) | 10 minutes |
 
-# Prepare deployment
-.\scripts\prepare-deployment.ps1 -Environment "prod"
-```
+### **By Experience Level**
+| Experience Level | Recommended Reading | Focus |
+|------------------|-------------------|-------|
+| **Beginner** | Quick Start → Configuration System | Basic setup and deployment |
+| **Intermediate** | Configuration System → Clean Execution Flowchart | Multi-environment and workflow understanding |
+| **Advanced** | All guides → Custom Domain → Troubleshooting | Production deployment and optimization |
 
----
+## 🎯 Common Workflows
 
-## 🎯 Documentation Goals
+### **First-Time Setup**
+1. [Quick Start](QUICK-START.md) - Get deployed in 5 minutes
+2. [Configuration System](CONFIGURATION-SYSTEM.md) - Understand the config
+3. [Clean Execution Flowchart](CLEAN-EXECUTION-FLOWCHART.md) - See how it works
 
-This documentation system is designed to:
+### **Regular Updates**
+1. Make changes to `src/index.html`
+2. Commit and push to main branch
+3. GitHub Actions automatically deploys
+4. Check [Troubleshooting](TROUBLESHOOTING.md) if issues arise
 
-- ✅ **Get you started quickly** with minimal configuration
-- ✅ **Provide comprehensive reference** for advanced users
-- ✅ **Solve problems fast** with targeted troubleshooting
-- ✅ **Support multiple environments** for professional workflows
-- ✅ **Ensure deployment success** with validation at every step
+### **Production Setup**
+1. [Configuration System](CONFIGURATION-SYSTEM.md) - Configure environments
+2. [Custom Domain Setup](CUSTOM-DOMAIN-SETUP.md) - Set up custom domain
+3. [PR Workflow Guide](PR-WORKFLOW-GUIDE.md) - Set up team workflow
 
----
+### **Problem Resolution**
+1. [Troubleshooting](TROUBLESHOOTING.md) - Check common issues
+2. [Clean Execution Flowchart](CLEAN-EXECUTION-FLOWCHART.md) - Understand the pipeline
+3. [Configuration System](CONFIGURATION-SYSTEM.md) - Verify configuration
 
-## 🔄 Documentation Updates
+## 🔧 Technical Stack
 
-This documentation reflects the **centralized configuration system** implemented in the project. Key improvements:
+### **Frontend Technologies**
+- **HTML5** with semantic markup
+- **CSS3** with responsive design
+- **JavaScript (ES6+)** for interactivity
+- **Google Fonts** for typography
 
-- 🎯 **Streamlined Setup:** From complex multi-file configuration to simple environment management
-- ⚙️ **Centralized Management:** Single source of truth for all environments
-- 🚀 **Automated Validation:** Built-in checks ensure deployment success
-- 📚 **Clear Documentation:** Task-focused guides instead of scattered information
+### **Infrastructure & Deployment**
+- **Azure Static Web Apps** (Free Tier hosting)
+- **Azure Bicep** (Infrastructure as Code)
+- **GitHub Actions** (CI/CD automation)
+- **GitHub Secrets** (Secure configuration)
 
----
-
-## � Need Help?
-
-If you can't find what you're looking for in the documentation:
-
-1. **Check** [🔧 Troubleshooting Guide](TROUBLESHOOTING.md) first
-2. **Search** the documentation for keywords
-3. **Start with** [🚀 Quick Start](QUICK-START.md) if you're new
-4. **Contact** the project maintainer for additional support
-
-**Remember:** Most issues can be resolved with the validation scripts:
-```powershell
-.\scripts\validate-essentials.ps1 -Environment "prod" -Detailed
-```
-
----
-
-**Happy Deploying! 🚀**
-- Essential PowerShell commands
-- Key configuration variables
-- Common troubleshooting fixes
-
-### 🔧 **Configuration Issues?**
-👉 **Check These:**
-- [Configuration Guide](CONFIGURATION.md) - Detailed config file explanations
-- [Centralized Config System](CENTRALIZED-CONFIG.md) - How the unified system works
-
-### 🚀 **Ready to Deploy?**
-👉 **Follow This:** [Production Deployment Guide](deployment-guide.md)
-- Enterprise-level deployment procedures
-- Health checks and rollback capabilities
-- Monitoring and troubleshooting
-
-### ❌ **Deployment Failing?**
-👉 **Solve With:** [Dependency Validation System](DEPENDENCY-VALIDATION.md)
-- Resolves "ResourceGroup does not exist" errors
-- Automatic dependency creation
-- Comprehensive pre-deployment validation
-
----
-
-## 📖 Documentation Overview
-
-### **What Each Guide Does:**
-
-| Guide | **What It Does** | **How It Does It** | **When to Use It** |
-|-------|------------------|--------------------|--------------------|
-| **[Pre-Deployment Guide](PRE-DEPLOYMENT-GUIDE.md)** | Complete setup walkthrough from zero to deployment-ready | Step-by-step configuration, validation scripts, troubleshooting | **FIRST TIME SETUP** - Start here if new to project |
-| **[Quick Reference](QUICK-REFERENCE.md)** | Instant access to commands and variables | Condensed tables, command examples, quick fixes | **DAILY USE** - When you need commands fast |
-| **[Configuration Guide](CONFIGURATION.md)** | Deep dive into configuration system | File-by-file breakdown, variable explanations, examples | **CONFIGURATION ISSUES** - When setup isn't working |
-| **[Centralized Config](CENTRALIZED-CONFIG.md)** | Explains unified configuration architecture | System design, variable substitution, best practices | **UNDERSTANDING** - How the config system works |
-| **[Deployment Guide](deployment-guide.md)** | Production-level deployment procedures | Safety mechanisms, health checks, rollback systems | **PRODUCTION DEPLOYMENT** - Enterprise-grade deployment |
-| **[Dependency Validation](DEPENDENCY-VALIDATION.md)** | Solves deployment prerequisite issues | Automated checking, resource creation, dependency resolution | **DEPLOYMENT FAILURES** - When resources are missing |
-
----
-
-## 🔄 Typical Workflow
-
-### **1. Initial Setup** (First Time)
-```
-Pre-Deployment Guide → Configuration Guide → Quick Reference
-```
-
-### **2. Daily Deployment** (Ongoing)
-```
-Quick Reference → Dependency Validation → Deployment Guide
-```
-
-### **3. Troubleshooting** (When Issues Arise)
-```
-Quick Reference → Configuration Guide → Dependency Validation → Deployment Guide
-```
-
----
-
-## 🎯 Quick Problem Resolution
-
-### **"I'm new and don't know where to start"**
-📖 **Solution:** [Pre-Deployment Guide](PRE-DEPLOYMENT-GUIDE.md)
-- Walks through everything from scratch
-- No prior knowledge assumed
-- Complete setup in one guide
-
-### **"ResourceGroup does not exist" error**
-🔧 **Solution:** [Dependency Validation System](DEPENDENCY-VALIDATION.md)
-- Automatically detects missing dependencies  
-- Creates missing resources with one command
-- Prevents deployment failures
-
-### **"Configuration validation failed"**
-⚙️ **Solution:** [Configuration Guide](CONFIGURATION.md) + [Centralized Config](CENTRALIZED-CONFIG.md)
-- Explains every configuration file
-- Shows proper variable formats
-- Troubleshoots common config issues
-
-### **"Deployment failed during health checks"**
-🚀 **Solution:** [Production Deployment Guide](deployment-guide.md)
-- Advanced troubleshooting procedures
-- Health check configuration
-- Rollback and recovery options
-
-### **"I need to deploy quickly"**
-⚡ **Solution:** [Quick Reference Guide](QUICK-REFERENCE.md)
-- Essential commands only
-- No lengthy explanations
-- Get deployed fast
-
----
-
-## 🏗️ System Architecture Overview
-
-This documentation covers a comprehensive deployment system with:
-
-### **🔧 Configuration Management**
-- **Centralized configuration** in `config/environments.json`
-- **Environment-specific overrides** for dev/staging/production
-- **Variable substitution** for consistency across environments
-- **Validation scripts** to prevent configuration errors
-
-### **🔍 Dependency Validation**
-- **Comprehensive prerequisite checking** before deployment
-- **Automatic resource creation** for missing dependencies
-- **Priority-based validation** (Azure CLI → Auth → Subscription → Resource Group → App)
-- **Dry-run capabilities** for safe preview
-
-### **🚀 Production Deployment**
-- **Staging-first deployment** with validation
-- **Health checks** and performance monitoring
-- **Automatic rollback** on failure detection
-- **Enterprise-level safety** measures
-
-### **📊 Monitoring & Logging**
-- **Detailed deployment logs** with timestamps
-- **Health check monitoring** with configurable thresholds
-- **Performance validation** and alerting
-- **Audit trails** for compliance
-
----
+### **Configuration Management**
+- **JSON-based configuration** (`environments.json`)
+- **Multi-environment support** (prod, staging, dev)
+- **OIDC authentication** with Azure
+- **Feature flags** for controlled rollouts
 
 ## 🎓 Learning Path
 
-### **Beginner (New to Project)**
-1. Read [Pre-Deployment Guide](PRE-DEPLOYMENT-GUIDE.md) completely
-2. Configure your environment following the guide
-3. Run validation scripts to ensure setup
-4. Bookmark [Quick Reference](QUICK-REFERENCE.md) for daily use
+### **Week 1: Basics**
+- Day 1: Complete [Quick Start](QUICK-START.md)
+- Day 2: Read [Configuration System](CONFIGURATION-SYSTEM.md)
+- Day 3: Study [Clean Execution Flowchart](CLEAN-EXECUTION-FLOWCHART.md)
+- Day 4: Practice making content updates
+- Day 5: Review [Troubleshooting](TROUBLESHOOTING.md)
 
-### **Intermediate (Regular User)**
-1. Use [Quick Reference](QUICK-REFERENCE.md) for daily commands
-2. Refer to [Dependency Validation](DEPENDENCY-VALIDATION.md) when deployment fails
-3. Check [Configuration Guide](CONFIGURATION.md) for advanced customization
+### **Week 2: Advanced**
+- Day 1: Set up multiple environments
+- Day 2: Configure [Custom Domain](CUSTOM-DOMAIN-SETUP.md)
+- Day 3: Implement [PR Workflow](PR-WORKFLOW-GUIDE.md)
+- Day 4: Performance optimization
+- Day 5: Security best practices
 
-### **Advanced (System Administrator)**
-1. Study [Centralized Config System](CENTRALIZED-CONFIG.md) for architecture understanding
-2. Master [Production Deployment Guide](deployment-guide.md) for enterprise procedures
-3. Customize health checks and monitoring thresholds
+## 📞 Getting Help
 
----
+### **Self-Service Resources**
+1. **Check [Troubleshooting](TROUBLESHOOTING.md)** for your specific issue
+2. **Review [Clean Execution Flowchart](CLEAN-EXECUTION-FLOWCHART.md)** to understand the process
+3. **Validate your configuration** using [Configuration System](CONFIGURATION-SYSTEM.md)
 
-## 🛡️ Safety & Security
-
-All guides emphasize:
-- **Never commit secrets** to version control
-- **Use Azure managed identities** when possible
-- **Validate all configurations** before deployment
-- **Monitor deployments** in real-time
-- **Have rollback procedures** ready
-
----
-
-## 📞 Support & Troubleshooting
-
-### **First Steps for Any Issue:**
-1. Check [Quick Reference](QUICK-REFERENCE.md) for immediate solutions
-2. Run validation scripts mentioned in guides
-3. Review deployment logs in the `logs/` directory
-4. Verify Azure authentication status
-
-### **Escalation Path:**
-1. **Configuration Issues** → [Configuration Guide](CONFIGURATION.md)
-2. **Dependency Problems** → [Dependency Validation](DEPENDENCY-VALIDATION.md)
-3. **Deployment Failures** → [Production Deployment Guide](deployment-guide.md)
-4. **System Understanding** → [Centralized Config](CENTRALIZED-CONFIG.md)
+### **Common Support Scenarios**
+- **Deployment fails:** Check GitHub Actions logs and [Troubleshooting](TROUBLESHOOTING.md)
+- **Configuration issues:** Review [Configuration System](CONFIGURATION-SYSTEM.md)
+- **Authentication problems:** See Azure authentication section in [Configuration System](CONFIGURATION-SYSTEM.md)
+- **Understanding workflow:** Study [Clean Execution Flowchart](CLEAN-EXECUTION-FLOWCHART.md)
 
 ---
 
-## 🔄 Documentation Maintenance
+**🚀 Ready to get started? Begin with the [Quick Start Guide](QUICK-START.md) and have your website live in 5 minutes!**
 
-This documentation is designed to be:
-- **Self-contained** - Each guide stands alone
-- **Cross-referenced** - Guides link to related information
-- **Practical** - Focused on actual deployment scenarios
-- **Comprehensive** - Covers beginner to advanced scenarios
-
----
-
-## 🎯 Success Metrics
-
-You'll know the documentation is working when:
-- ✅ **New users** can deploy successfully using just the Pre-Deployment Guide
-- ✅ **Daily deployments** complete without referring to detailed documentation
-- ✅ **Troubleshooting** is resolved quickly using the guides
-- ✅ **Configuration changes** are made confidently with validation
-
----
-
-## 📝 Documentation Updates
-
-When updating documentation:
-1. **Update cross-references** when adding new sections
-2. **Test all commands** mentioned in guides
-3. **Verify links** work correctly
-4. **Keep examples current** with actual configuration
-
----
-
-**🎯 Start Your Journey:** [Pre-Deployment Guide](PRE-DEPLOYMENT-GUIDE.md) | [Quick Reference](QUICK-REFERENCE.md)
+**💡 Pro Tip:** Bookmark this documentation hub and refer back to it as you advance from basic deployment to production-ready automation.

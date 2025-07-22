@@ -72,20 +72,20 @@
         "location": "eastasia",
         "environmentName": "prod",
         "resourceGroup": "jyothi-resume-RG",
-        "staticWebAppName": "jyothi-prakash-resume-prod",
+        "staticWebAppName": "jyothiventrapragada-resume",
         "auth": {
           "clientId": "7a41cd11-5f2e-4cb6-8146-1540a57dba02",
           "tenantId": "4f196d4e-cc09-4b51-ba8f-5ca648235093",
           "subscriptionId": "776213a4-71bc-4091-861f-245ce8b18d84"
         },
         "customDomain": {
-          "enabled": true,
-          "required": true,
+          "enabled": false,
+          "required": false,
           "friendlyName": "jyothiventrapragada",
-          "domainType": "external",
-          "fullDomain": "jyothiventrapragada.com",
+          "domainType": "azure",
+          "fullDomain": "",
           "autoConfigureDNS": false,
-          "description": "Custom domain for the resume website. This is mandatory for professional deployment.",
+          "description": "Using free Azure Static Web Apps domain (*.azurestaticapps.net) for cost-free hosting.",
           "validation": {
             "pattern": "^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\\.[a-z]{2,}$",
             "example": "yourname.com or resume.yourname.com"
@@ -101,7 +101,7 @@
         "enableApplicationInsights": true,
         "enableSSL": true,
         "enableStagingSlots": false,
-        "enableCustomDomains": true
+        "enableCustomDomains": false
       },
       "monitoring": {
         "healthChecksEnabled": true,

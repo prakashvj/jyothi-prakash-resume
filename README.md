@@ -1,62 +1,67 @@
 # 🏠 Jyothi Prakash Resume Website
 
-Professional re## 📚 Documentation
-
-| Document | Description | Use Case |
-|----------|-------------|----------|
-| [🚀 Quick Start](docs/QUICK-START.md) | Get started in 5 minutes | First-time setup |
-| [⚙️ Configuration System](docs/CONFIGURATION-SYSTEM.md) | Environment and configuration management | Understanding the config system |
-| [📜 Scripts Reference](docs/SCRIPTS-REFERENCE.md) | Complete script documentation | Script usage and parameters |
-| [🚀 Deployment Reference](docs/DEPLOYMENT-REFERENCE.md) | Deployment strategies and best practices | Advanced deployment scenarios |
-| [🔄 PR Workflow Guide](docs/PR-WORKFLOW-GUIDE.md) | Professional Pull Request workflow | Team collaboration & code quality |
-| [🔧 Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and solutions | Problem resolution |ite for **Jyothi Prakash Ventrapragada**, Senior Site Reliability Engineering Manager, showcasing 25+ years of technology experience with Azure cloud environments, database architecture, and large-scale distributed systems.
+Professional resume website for **Jyothi Prakash Ventrapragada**, Senior Site Reliability Engineering Manager, showcasing 25+ years of technology experience with Azure cloud environments, database architecture, and large-scale distributed systems.
 
 ## 🌐 Live Website
 
-**Production URL:** https://mango-water-0502ea200.1.azurestaticapps.net
+**Production URL:** https://orange-wave-01f74d300.1.azurestaticapps.net
 
 ## 🚀 Quick Start (5 minutes)
 
-### 1. Clone and Setup
+### 1. Fork and Clone
 ```bash
+# Fork this repository on GitHub first, then clone your fork
 git clone https://github.com/your-username/jyothi-prakash-resume.git
 cd jyothi-prakash-resume
 ```
 
-### 2. Configure Environment
-```powershell
-# Copy environment template
-cp config\.env.template config\.env
-
-# Edit with your Azure details
-notepad config\.env
+### 2. Configure Azure Authentication (Optional for OIDC)
+If you want to use OIDC authentication, edit `config/environments.json`:
+```json
+{
+  "environments": {
+    "prod": {
+      "azure": {
+        "auth": {
+          "clientId": "your-azure-client-id",
+          "tenantId": "your-azure-tenant-id", 
+          "subscriptionId": "your-azure-subscription-id"
+        }
+      }
+    }
+  }
+}
 ```
 
 ### 3. Deploy to Azure
-```powershell
-# One-command deployment (creates everything)
-.\scripts\deploy-one-command.ps1 -Environment "prod"
+```bash
+# Push to main branch triggers automatic GitHub Actions deployment
+git add .
+git commit -m "Initial setup: Configure Azure authentication"
+git push origin main
 ```
 
-**� That's it! Your resume website is now live on Azure!**
+**✅ That's it! GitHub Actions will automatically deploy your website to Azure!**
 
 👉 **New to the project? Start with [Quick Start Guide](docs/QUICK-START.md)** 👈
 
-## �🏗️ Architecture
+## 🏗️ Architecture
 
 - **Frontend:** Static HTML with modern CSS and JavaScript
 - **Hosting:** Azure Static Web Apps (Free Tier)
+- **CI/CD:** GitHub Actions with automated deployment
 - **Infrastructure:** Bicep (Infrastructure as Code)
-- **Configuration:** Centralized multi-environment system
-- **Deployment:** PowerShell automation scripts
+- **Configuration:** Centralized `environments.json` system
+- **Authentication:** OIDC or Interactive Azure CLI
 
 ## 📋 Key Features
 
 - ✅ **Print-Optimized:** Fits exactly 3 pages when printed
 - ✅ **Responsive Design:** Mobile-friendly professional layout
 - ✅ **Fast Loading:** Single HTML file with embedded assets
+- ✅ **GitHub Actions CI/CD:** Automatic deployment on push
 - ✅ **Multi-Environment:** Support for prod, staging, dev environments
-- ✅ **One-Command Deployment:** Complete automation
+- ✅ **Smart Deployment:** Only deploys when content actually changes
 - ✅ **Configuration Management:** Centralized settings system
 - ✅ **Comprehensive Validation:** Pre and post-deployment checks
 
@@ -66,49 +71,53 @@ notepad config\.env
 |----------|-------------|----------|
 | [🚀 Quick Start](docs/QUICK-START.md) | Get started in 5 minutes | First-time setup |
 | [⚙️ Configuration System](docs/CONFIGURATION-SYSTEM.md) | Environment and configuration management | Understanding the config system |
-| [� Scripts Reference](docs/SCRIPTS-REFERENCE.md) | Complete script documentation | Script usage and parameters |
-| [🚀 Deployment Reference](docs/DEPLOYMENT-REFERENCE.md) | Deployment strategies and best practices | Advanced deployment scenarios |
+| [🔄 Clean Execution Flowchart](docs/CLEAN-EXECUTION-FLOWCHART.md) | Complete GitHub Actions workflow visualization | Understanding the CI/CD pipeline |
+| [📊 Complete Execution Flow](docs/COMPLETE-EXECUTION-FLOW.md) | Detailed pipeline documentation | Advanced deployment scenarios |
 | [🔧 Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and solutions | Problem resolution |
 
-## ⚡ Quick Commands
+## ⚡ How It Works
 
-```powershell
-# 🚀 First-time deployment (creates everything)
-.\scripts\deploy-one-command.ps1 -Environment "prod"
+```bash
+# 🚀 Make changes to your resume
+git add src/index.html
+git commit -m "Update: Add new project experience"
 
-# ⚡ Content updates only (faster)
-.\scripts\quick-deploy.ps1 -Environment "prod"
+# 📤 Push triggers automatic deployment
+git push origin main
 
-# ✅ Validate deployment health
-.\scripts\validate-deployment.ps1 -Environment "prod"
+# 🤖 GitHub Actions automatically:
+# 1. Validates configuration
+# 2. Authenticates with Azure (OIDC or Interactive)
+# 3. Checks existing resources (smart skipping)
+# 4. Deploys only if changes detected
+# 5. Provides live URL
 
-# ⚙️ Test configuration
-.\scripts\config-loader.ps1 -Environment "prod" -ValidateOnly
-
-# 🔍 Essential validation checks
-.\scripts\validate-essentials.ps1 -Environment "prod" -Quick
+# ✅ Your website is live!
 ```
 
 ## 🎯 Common Workflows
 
 ### First-Time Setup
-```powershell
-# 1. Copy environment template
-cp config\.env.template config\.env
+```bash
+# 1. Fork and clone the repository
+git clone https://github.com/your-username/jyothi-prakash-resume.git
 
-# 2. Edit with your Azure details
-notepad config\.env
+# 2. Customize your resume content
+# Edit src/index.html with your details
 
-# 3. Deploy everything
-.\scripts\deploy-one-command.ps1 -Environment "prod"
+# 3. Push to deploy
+git add .
+git commit -m "Initial: Set up my resume website"
+git push origin main
 ```
 
 ### Regular Updates
-```powershell
+```bash
 # Create feature branch for changes
 git checkout -b feature/update-resume-content
 
 # Make your changes to src/index.html or src/css/style.css
+# Edit your resume content
 
 # Commit and push
 git add .
@@ -119,26 +128,20 @@ git push origin feature/update-resume-content
 # After review and approval, merge triggers automatic deployment
 ```
 
-### Professional PR Workflow
-👉 **[Complete PR Workflow Guide](docs/PR-WORKFLOW-GUIDE.md)** for team collaboration
-
-### Troubleshooting
-```powershell
-# Validate setup
-.\scripts\validate-essentials.ps1 -Environment "prod" -Detailed
-
-# Check configuration
-.\scripts\config-loader.ps1 -Environment "prod" -ShowAll
-```
+### Monitoring Your Deployment
+1. **Push to main** triggers GitHub Actions
+2. **Check Actions tab** on GitHub for deployment status
+3. **View live website** at the URL provided in Actions output
+4. **Review logs** in GitHub Actions for any issues
 
 ## 🔧 Configuration System
 
-This project uses a **centralized configuration system** supporting multiple environments:
+This project uses **GitHub Actions** with a centralized configuration system supporting multiple environments:
 
 ### Configuration Files
 - `config/environments.json` - Environment-specific settings
-- `config/.env` - Local overrides and secrets (git-ignored)
-- `scripts/ConfigModule.psm1` - PowerShell configuration functions
+- `.github/workflows/full-infrastructure-deploy.yml` - GitHub Actions workflow
+- `infra/main.bicep` - Azure infrastructure template
 
 ### Multi-Environment Support
 ```json
@@ -147,15 +150,13 @@ This project uses a **centralized configuration system** supporting multiple env
     "prod": {
       "azure": {
         "resourceGroup": "jyothi-resume-RG",
-        "staticWebAppName": "jyothi-resume-WebApp",
-        "location": "eastasia"
-      }
-    },
-    "staging": {
-      "azure": {
-        "resourceGroup": "jyothi-resume-staging-RG",
-        "staticWebAppName": "jyothi-resume-staging",
-        "location": "eastus"
+        "staticWebAppName": "jyothiventrapragada-resume",
+        "location": "eastasia",
+        "auth": {
+          "clientId": "your-client-id",
+          "tenantId": "your-tenant-id",
+          "subscriptionId": "your-subscription-id"
+        }
       }
     }
   }
@@ -169,19 +170,13 @@ This project uses a **centralized configuration system** supporting multiple env
 ```
 jyothi-prakash-resume/
 ├── 📁 src/                          # Website source code
-│   └── index.html                   # Main resume website
+│   ├── index.html                   # Main resume website
+│   ├── css/style.css               # Styling
+│   └── js/main.js                  # JavaScript functionality
+├── 📁 .github/workflows/            # GitHub Actions CI/CD
+│   └── full-infrastructure-deploy.yml # Main deployment workflow
 ├── 📁 config/                       # Configuration management
-│   ├── .env.template                # Environment template
-│   ├── environments.json            # Environment settings
-│   └── settings.ini                 # Legacy settings
-├── 📁 scripts/                      # Deployment automation
-│   ├── deploy-one-command.ps1       # Full deployment
-│   ├── quick-deploy.ps1             # Content-only deployment
-│   ├── validate-deployment.ps1      # Health validation
-│   ├── validate-essentials.ps1      # Essential checks
-│   ├── config-loader.ps1            # Configuration testing
-│   ├── prepare-deployment.ps1       # Deployment preparation
-│   └── ConfigModule.psm1            # Configuration functions
+│   └── environments.json            # Environment settings
 ├── 📁 infra/                        # Infrastructure as Code
 │   ├── main.bicep                   # Main Bicep template
 │   ├── main.parameters.json         # Deployment parameters
@@ -189,42 +184,42 @@ jyothi-prakash-resume/
 ├── 📁 docs/                         # Documentation
 │   ├── QUICK-START.md               # 5-minute setup guide
 │   ├── CONFIGURATION-SYSTEM.md      # Config system guide
-│   ├── SCRIPTS-REFERENCE.md         # Script documentation
-│   ├── DEPLOYMENT-REFERENCE.md      # Deployment strategies
+│   ├── CLEAN-EXECUTION-FLOWCHART.md # Workflow visualization
 │   └── TROUBLESHOOTING.md           # Problem resolution
-└── 📁 logs/                         # Deployment logs
+└── 📁 logs/                         # Deployment logs (local scripts)
 ```
 
-## 🚀 Available Scripts
+## 🚀 GitHub Actions Workflow
 
-| Script | Purpose | Usage |
-|--------|---------|-------|
-| `deploy-one-command.ps1` | Complete deployment | First-time setup, infrastructure changes |
-| `quick-deploy.ps1` | Content-only deployment | Regular website updates |
-| `validate-deployment.ps1` | Health & performance checks | Post-deployment validation |
-| `validate-essentials.ps1` | Essential pre-checks | Pre-deployment validation |
-| `config-loader.ps1` | Configuration management | Testing and debugging |
-| `prepare-deployment.ps1` | Deployment preparation | Dependency validation |
+The deployment is fully automated through GitHub Actions:
 
-## 🌍 Multi-Environment Deployment
+| Trigger | Action | Duration |
+|---------|---------|----------|
+| **Push to main** | Full deployment (if infrastructure missing) | 8-12 minutes |
+| **Push to main** | Content-only deployment (if infrastructure exists) | 2-4 minutes |
+| **No changes** | Skip deployment (validation only) | 1-2 minutes |
+| **PR opened** | Deploy to preview environment | 5-8 minutes |
+| **PR closed** | Cleanup preview environment | 1-2 minutes |
 
-Deploy to different environments:
+## 🌍 Multi-Environment Support
 
-```powershell
-# Production
-.\scripts\deploy-one-command.ps1 -Environment "prod"
+The GitHub Actions workflow automatically detects and deploys to different environments based on configuration:
 
-# Staging
-.\scripts\deploy-one-command.ps1 -Environment "staging"
-
-# Development
-.\scripts\deploy-one-command.ps1 -Environment "dev"
+```json
+{
+  "environments": {
+    "prod": { /* Production settings */ },
+    "staging": { /* Staging settings */ },
+    "dev": { /* Development settings */ }
+  }
+}
 ```
 
 ## 💰 Cost & Performance
 
 - **Azure Static Web Apps Free Tier:** $0/month
 - **100GB bandwidth included**
+- **GitHub Actions:** 2,000 minutes/month free
 - **Page Load Speed:** < 2 seconds
 - **Lighthouse Score:** 95+ (Performance, Accessibility, SEO)
 - **Print Optimization:** Exactly 3 pages when printed
@@ -234,17 +229,19 @@ Deploy to different environments:
 - ✅ **HTTPS Only:** Enforced SSL/TLS encryption
 - ✅ **Managed Certificates:** Automatic SSL provisioning
 - ✅ **No Backend Dependencies:** Reduced attack surface
-- ✅ **Configuration Security:** Secrets in git-ignored files
+- ✅ **OIDC Authentication:** Secure GitHub to Azure authentication
 - ✅ **Azure Security:** Built-in Azure protection features
+- ✅ **No Secrets in Code:** Authentication via GitHub Actions
 
 ## 🛠️ Technologies
 
 - **Frontend:** HTML5, CSS3, JavaScript (ES6+)
 - **Fonts:** Google Fonts (Playfair Display, Source Sans Pro)
 - **Infrastructure:** Azure Bicep
-- **Automation:** PowerShell scripts
+- **CI/CD:** GitHub Actions
 - **Deployment:** Azure Static Web Apps
-- **Configuration:** JSON + Environment variables
+- **Configuration:** JSON-based environment system
+- **Authentication:** Azure OIDC or Interactive login
 
 ## 🔧 Development
 
@@ -255,24 +252,26 @@ start src/index.html  # Windows
 open src/index.html   # macOS
 ```
 
+### Making Changes
+1. **Edit content:** Modify `src/index.html` for resume updates
+2. **Test locally:** Open in browser to preview changes
+3. **Commit changes:** `git add . && git commit -m "Update: description"`
+4. **Deploy automatically:** `git push origin main`
+5. **Verify deployment:** Check GitHub Actions tab for status
+
 ### Print Layout Testing
 ```javascript
 // Test print layout in browser console
 window.print();
 ```
 
-### Making Changes
-1. Edit `src/index.html` for content updates
-2. Test locally in browser
-3. Use `quick-deploy.ps1` for fast updates
-4. Validate with `validate-deployment.ps1`
-
 ## 🆘 Need Help?
 
 - 🚀 **New User?** Start with [Quick Start Guide](docs/QUICK-START.md)
 - ⚙️ **Configuration Issues?** Check [Configuration System](docs/CONFIGURATION-SYSTEM.md)
-- 🔧 **Deployment Problems?** See [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
-- 📜 **Script Questions?** Review [Scripts Reference](docs/SCRIPTS-REFERENCE.md)
+- 🔄 **Workflow Questions?** See [Clean Execution Flowchart](docs/CLEAN-EXECUTION-FLOWCHART.md)
+- 🔧 **Deployment Problems?** Review [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
+- 📊 **Understanding Pipeline?** Check [Complete Execution Flow](docs/COMPLETE-EXECUTION-FLOW.md)
 
 ## 📧 Contact
 
@@ -283,4 +282,4 @@ window.print();
 
 ---
 
-**Built with ❤️ using Azure Static Web Apps and modern deployment automation**
+**Built with ❤️ using Azure Static Web Apps and GitHub Actions automation**
