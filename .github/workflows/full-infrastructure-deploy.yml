@@ -330,13 +330,19 @@ jobs:
             fi
             
             # Check for documentation-only changes (skip deployment)
-            DOC_ONLY_CHANGES=$(echo "$CHANGED_FILES" | grep -v -E '^src/|^config/environments\.json$|^infra/|^azure\.yaml$|^\.github/workflows/full-infrastructure-deploy\.yml$' | wc -l)
-            TOTAL_CHANGES=$(echo "$CHANGED_FILES" | wc -l)
+            # Define what counts as documentation files
+            DOC_FILES=$(echo "$CHANGED_FILES" | grep -E '^docs/.*\.md$|^README\.md$|^.*\.md$|^DOCUMENTATION.*\.md$|^LICENSE$|^\.gitignore$|^\.vscode/')
+            NON_DOC_FILES=$(echo "$CHANGED_FILES" | grep -v -E '^docs/.*\.md$|^README\.md$|^.*\.md$|^DOCUMENTATION.*\.md$|^LICENSE$|^\.gitignore$|^\.vscode/')
             
-            if [ "$DOC_ONLY_CHANGES" -eq "$TOTAL_CHANGES" ] && [ "$DOC_ONLY_CHANGES" -gt 0 ]; then
-              echo "📚 Documentation-only changes detected - skipping deployment"
+            if [ -z "$NON_DOC_FILES" ] && [ -n "$DOC_FILES" ]; then
+              echo "📚 Documentation-only changes detected:"
+              echo "$DOC_FILES" | head -10
+              echo "🚫 Skipping deployment - no infrastructure or content changes"
               CONTENT_CHANGED="false"
               INFRASTRUCTURE_CHANGED="false"
+              echo "skip_deployment=true" >> $GITHUB_OUTPUT
+            else
+              echo "skip_deployment=false" >> $GITHUB_OUTPUT
             fi
           else
             echo "ℹ️ No file changes detected (manual trigger or first commit)"
@@ -346,8 +352,18 @@ jobs:
           echo "content_changed=$CONTENT_CHANGED" >> $GITHUB_OUTPUT
           echo "infrastructure_changed=$INFRASTRUCTURE_CHANGED" >> $GITHUB_OUTPUT
 
+      - name: Skip Deployment for Documentation-Only Changes
+        if: steps.content_changes.outputs.skip_deployment == 'true'
+        run: |
+          echo "📚 Documentation-only changes detected:"
+          echo "   Changed files are only documentation, README, or configuration files"
+          echo "   No deployment needed - infrastructure and content remain unchanged"
+          echo ""
+          echo "✅ Workflow completed successfully without deployment"
+          echo "💡 Next push with src/ or infra/ changes will trigger deployment"
+
       - name: Deploy Content (New Infrastructure)
-        if: steps.check_resources.outputs.skip_provisioning != 'true' || steps.check_resources.outputs.resource_changed == 'true'
+        if: (steps.check_resources.outputs.skip_provisioning != 'true' || steps.check_resources.outputs.resource_changed == 'true') && steps.content_changes.outputs.skip_deployment != 'true'
         run: |
           RESOURCE_GROUP="${{ steps.check_resources.outputs.resource_group }}"
           STATIC_WEB_APP="${{ steps.config_validation.outputs.static_web_app }}"
@@ -367,7 +383,7 @@ jobs:
         id: new_infrastructure_token
 
       - name: Deploy Content to New Infrastructure (Using Static Web Apps Action)
-        if: (steps.check_resources.outputs.skip_provisioning != 'true' || steps.check_resources.outputs.resource_changed == 'true') && steps.new_infrastructure_token.outputs.api_token != ''
+        if: (steps.check_resources.outputs.skip_provisioning != 'true' || steps.check_resources.outputs.resource_changed == 'true') && steps.new_infrastructure_token.outputs.api_token != '' && steps.content_changes.outputs.skip_deployment != 'true'
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ steps.new_infrastructure_token.outputs.api_token }}
@@ -399,7 +415,7 @@ jobs:
           fi
 
       - name: Deploy Content Only (Existing Infrastructure)
-        if: steps.check_resources.outputs.skip_provisioning == 'true' && steps.check_resources.outputs.resource_changed != 'true' && steps.content_changes.outputs.content_changed == 'true'
+        if: steps.check_resources.outputs.skip_provisioning == 'true' && steps.check_resources.outputs.resource_changed != 'true' && steps.content_changes.outputs.content_changed == 'true' && steps.content_changes.outputs.skip_deployment != 'true'
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN || steps.get_existing_api_token.outputs.api_token || steps.get_api_token.outputs.api_token }}
