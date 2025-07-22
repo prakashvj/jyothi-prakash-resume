@@ -317,16 +317,26 @@ jobs:
             echo "📂 Changed files:"
             echo "$CHANGED_FILES"
             
-            # Check for content changes
+            # Check for content changes (website source code and config)
             if echo "$CHANGED_FILES" | grep -E '^src/|^config/environments\.json$'; then
               CONTENT_CHANGED="true"
               echo "✅ Content changes detected"
             fi
             
             # Check for infrastructure changes
-            if echo "$CHANGED_FILES" | grep -E '^infra/|^azure\.yaml$|^\.github/workflows/'; then
+            if echo "$CHANGED_FILES" | grep -E '^infra/|^azure\.yaml$|^\.github/workflows/full-infrastructure-deploy\.yml$'; then
               INFRASTRUCTURE_CHANGED="true"
               echo "✅ Infrastructure changes detected"
+            fi
+            
+            # Check for documentation-only changes (skip deployment)
+            DOC_ONLY_CHANGES=$(echo "$CHANGED_FILES" | grep -v -E '^src/|^config/environments\.json$|^infra/|^azure\.yaml$|^\.github/workflows/full-infrastructure-deploy\.yml$' | wc -l)
+            TOTAL_CHANGES=$(echo "$CHANGED_FILES" | wc -l)
+            
+            if [ "$DOC_ONLY_CHANGES" -eq "$TOTAL_CHANGES" ] && [ "$DOC_ONLY_CHANGES" -gt 0 ]; then
+              echo "📚 Documentation-only changes detected - skipping deployment"
+              CONTENT_CHANGED="false"
+              INFRASTRUCTURE_CHANGED="false"
             fi
           else
             echo "ℹ️ No file changes detected (manual trigger or first commit)"
